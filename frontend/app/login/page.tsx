@@ -1,0 +1,81 @@
+"use client";
+import React, { useState, FormEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Input from "@/components/Input";
+import { emailRegex } from "@/components/const";
+import { validateField } from "@/components/functions";
+
+const LoginPage: React.FC = () => {
+	const [email, setEmail] = useState<string>("");
+	const [password, setPassword] = useState<string>("");
+	const router = useRouter();
+	const [emailError, setEmailError] = useState<boolean>(false);
+	const [isFormValid, setIsFormValid] = useState<boolean>(false);
+
+	const handleSubmit = async (event: FormEvent) => {
+		event.preventDefault();
+		router.push("/");
+	};
+
+	const validateEmail = (email: string) =>
+		setEmailError(!validateField(email, emailRegex));
+
+	useEffect(() => {
+		setIsFormValid(email !== "" && password !== "");
+	}, [email, password]);
+
+	useEffect(() => {
+		const isEmailValid = emailRegex.test(email);
+
+		const formIsValid = isEmailValid && password !== "";
+
+		setIsFormValid(formIsValid);
+	}, [email, password]);
+
+	return (
+		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+			<div className="max-w-md w-full space-y-8">
+				<div>
+					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+						Sign in to your account
+					</h2>
+				</div>
+				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+					<input type="hidden" name="remember" value="true" />
+					<div className="rounded-md shadow-sm space-y-4">
+						<Input
+							id="email-address"
+							type="email"
+							placeholder="Email address"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+						/>
+						<Input
+							id="password"
+							type="password"
+							placeholder="Password"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+						/>
+					</div>
+
+					<div>
+						<button
+							type="submit"
+							disabled={!isFormValid}
+							className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md ${
+								isFormValid
+									? "text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+									: "text-gray-500 bg-gray-200 cursor-not-allowed"
+							}`}
+						>
+							Sign in
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	);
+};
+
+export default LoginPage;
