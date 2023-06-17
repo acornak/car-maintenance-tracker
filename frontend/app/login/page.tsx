@@ -5,16 +5,53 @@ import Input from "@/components/Input";
 import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
 
+async function handleLogin(email: string, password: string): Promise<any> {
+	const res = await fetch("http://localhost:8000/api/v1/login", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			email: email,
+			password: password,
+		}),
+	});
+
+	const data = await res.json();
+
+	if (res.ok) {
+		const { access_token, refresh_token } = data;
+		console.log(access_token, refresh_token);
+	}
+
+	return res;
+}
+
 const LoginPage: React.FC = () => {
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const router = useRouter();
 	const [emailError, setEmailError] = useState<boolean>(false);
 	const [isFormValid, setIsFormValid] = useState<boolean>(false);
+	const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
+	const [error, setError] = useState<string>("");
 
 	const handleSubmit = async (event: FormEvent) => {
 		event.preventDefault();
-		router.push("/");
+
+		const res = await handleLogin(email, password);
+		if (res.ok) {
+			setLoginSuccess(true);
+			router.push("/");
+		} else {
+			setLoginSuccess(false);
+			// Handle login failure
+			if (res.status === 401) {
+				// Invalid credentials
+				setError("Invalid credentials. Please try again.");
+			} else {
+				// Other failure scenarios
+				setError("Login failed. Please try again.");
+			}
+		}
 	};
 
 	const validateEmail = (email: string) =>
@@ -66,7 +103,6 @@ const LoginPage: React.FC = () => {
 							onChange={(e) => setPassword(e.target.value)}
 						/>
 					</div>
-
 					<div>
 						<button
 							type="submit"
@@ -81,6 +117,12 @@ const LoginPage: React.FC = () => {
 						</button>
 					</div>
 				</form>
+				{error && <div className="mt-4 text-red-600">{error}</div>}
+				{loginSuccess && (
+					<div className="mt-4 text-green-500">
+						Login successful! Redirecting...
+					</div>
+				)}
 			</div>
 		</div>
 	);

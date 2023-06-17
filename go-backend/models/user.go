@@ -58,7 +58,7 @@ func (m *DBModel) Authenticate(user User) (User, error) {
 	err := row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return User{}, ErrNoRecord
+			return User{}, errors.New("models: no matching record found")
 		} else {
 			return User{}, err
 		}
@@ -67,7 +67,7 @@ func (m *DBModel) Authenticate(user User) (User, error) {
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return User{}, ErrInvalidCredentials
+			return User{}, errors.New("models: invalid credentials")
 		} else {
 			return User{}, err
 		}
@@ -76,7 +76,55 @@ func (m *DBModel) Authenticate(user User) (User, error) {
 	return user, nil
 }
 
-var (
-	ErrNoRecord           = errors.New("models: no matching record found")
-	ErrInvalidCredentials = errors.New("models: invalid credentials")
-)
+func (m *DBModel) GetAllNicknames() ([]string, error) {
+	rows, err := m.DB.Query("SELECT nickname FROM users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var nicknames []string
+	for rows.Next() {
+		var nickname string
+		err = rows.Scan(&nickname)
+		if err != nil {
+			return nil, err
+		}
+		nicknames = append(nicknames, nickname)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return nicknames, nil
+}
+
+func (m *DBModel) GetByEmail(email string) (User, error) {
+	var user User
+	stmt := `SELECT id, first_name, last_name, nickname, email, password FROM users WHERE email = $1`
+	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname, &user.Email, &user.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return User{}, errors.New("user not found")
+		}
+		return User{}, err
+	}
+	return user, nil
+}
+
+func (m *DBModel) GetUserByID(id int) (*User, error) {
+	stmt := `SELECT id, first_name, last_name, nickname, email, password FROM users WHERE id=$1`
+
+	row := m.DB.QueryRow(stmt, id)
+
+	user := &User{}
+	err := row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname, &user.Email, &user.Password)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("no such user")
+	} else if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

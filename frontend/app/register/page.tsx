@@ -1,11 +1,20 @@
 "use client";
 // pages/register.tsx
 import React, { useState, FormEvent, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
 import zxcvbn from "zxcvbn";
 import Input from "@/components/Input";
 import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
+
+async function existingNicknames(): Promise<[string]> {
+	const res = await fetch("http://localhost:8000/api/v1/nicknames", {
+		method: "GET",
+		headers: { "Content-Type": "application/json" },
+	});
+	const data: any = await res.json();
+	return data.nicknames;
+}
 
 async function registerUser(
 	firstName: string,
@@ -15,7 +24,7 @@ async function registerUser(
 	password: string,
 ) {
 	// TODO: add env vars
-	const response = await fetch("http://localhost:8000/api/v1/register", {
+	const res = await fetch("http://localhost:8000/api/v1/register", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
@@ -26,7 +35,7 @@ async function registerUser(
 			password: password,
 		}),
 	});
-	const data = await response.json();
+	const data = await res.json();
 	return data;
 }
 
@@ -39,6 +48,7 @@ const RegisterPage: React.FC = () => {
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
 	const [emailError, setEmailError] = useState<boolean>(false);
+	const [nicknameError, setNicknameError] = useState<boolean>(false);
 	const [emailConfirmError, setEmailConfirmError] = useState<boolean>(false);
 	const [passwordConfirmError, setPasswordConfirmError] =
 		useState<boolean>(false);
@@ -53,8 +63,6 @@ const RegisterPage: React.FC = () => {
 
 	const [isFormValid, setIsFormValid] = useState<boolean>(false);
 
-	const router = useRouter();
-
 	const passwordRegex =
 		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_\-+=?/\\|~`:;"';]).{8,}$/;
 
@@ -67,6 +75,15 @@ const RegisterPage: React.FC = () => {
 
 	const validateConfirmPassword = (value: string) =>
 		setPasswordConfirmError(value !== password);
+
+	const validateNickname = async (nickname: string) => {
+		const nicknames: [string] = await existingNicknames();
+		if (nicknames.includes(nickname)) {
+			setNicknameError(true);
+		} else {
+			setNicknameError(false);
+		}
+	};
 
 	const updatePasswordStrength = (password: string) => {
 		const { score } = zxcvbn(password);
@@ -100,6 +117,7 @@ const RegisterPage: React.FC = () => {
 				break;
 			case "nickname":
 				setNickname(value);
+				validateNickname(value);
 				break;
 			case "email":
 				setEmail(value);
@@ -214,6 +232,11 @@ const RegisterPage: React.FC = () => {
 							onChange={(event) => handleChange(event)}
 							name="nickname"
 						/>
+						{nicknameError && (
+							<div className="mb-4 text-sm text-red-600">
+								Nickname already exists.
+							</div>
+						)}
 						<Input
 							id="email"
 							type="email"

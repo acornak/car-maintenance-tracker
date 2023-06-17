@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/acornak/car-maintenance-tracker/models"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
 	_ "github.com/lib/pq"
@@ -28,7 +30,7 @@ type application struct {
 }
 
 type config struct {
-	port   int
+	port   string
 	env    string
 	dbConn struct {
 		host     string
@@ -39,9 +41,6 @@ type config struct {
 		sslmode  string
 	}
 	allowedOrigin string
-	jwt           struct {
-		secret string
-	}
 }
 
 var sugar *zap.SugaredLogger
@@ -56,17 +55,24 @@ func init() {
 func main() {
 	var cfg config
 
-	flag.IntVar(&cfg.port, "PORT", 8000, "Server port to listen on")
 	flag.StringVar(&cfg.env, "ENV", "develop", "Application environment")
-	flag.StringVar(&cfg.allowedOrigin, "ALLOWED_ORIGIN", "http://localhost:3000", "Allowd origin for server CORS policy")
-	// flag.StringVar(&cfg.jwt.secret, "JWT_SECRET", generateSecret("secret", "data"), "secret")
-	flag.StringVar(&cfg.dbConn.host, "DB_HOST", "localhost", "DB host")
-	flag.StringVar(&cfg.dbConn.port, "DB_PORT", "5432", "DB port")
-	flag.StringVar(&cfg.dbConn.user, "DB_USER", "user", "DB user")
-	flag.StringVar(&cfg.dbConn.password, "DB_PASS", "password", "DB password")
-	flag.StringVar(&cfg.dbConn.dbname, "DB_NAME", "car-maintenance-tracker", "DB name")
-	flag.StringVar(&cfg.dbConn.sslmode, "SSL_MODE", "disable", "DB sslmode")
 	flag.Parse()
+
+	if cfg.env == "develop" {
+		err := godotenv.Load(".envrc")
+		if err != nil {
+			sugar.Fatal("failed to load env vars:", err)
+		}
+	}
+
+	cfg.port = os.Getenv("PORT")
+	cfg.allowedOrigin = os.Getenv("ALLOWED_ORIGIN")
+	cfg.dbConn.host = os.Getenv("DB_HOST")
+	cfg.dbConn.port = os.Getenv("DB_PORT")
+	cfg.dbConn.user = os.Getenv("DB_USER")
+	cfg.dbConn.password = os.Getenv("DB_PASS")
+	cfg.dbConn.dbname = os.Getenv("DB_NAME")
+	cfg.dbConn.sslmode = os.Getenv("SSL_MODE")
 
 	// Initialize the database
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
@@ -97,7 +103,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
+		Addr:         fmt.Sprintf(":%s", cfg.port),
 		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,

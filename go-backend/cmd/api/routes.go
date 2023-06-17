@@ -12,6 +12,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc(apiVersion+"/status", app.statusHandler)
 	mux.HandleFunc(apiVersion+"/login", app.loginHandler)
 	mux.HandleFunc(apiVersion+"/register", app.registerHandler)
+	mux.HandleFunc(apiVersion+"/nicknames", app.nicknamesHandler)
 	// mux.HandleFunc(apiVersion+"/update-user", app.registerHandler)
 
 	return app.enableCORS(mux)
