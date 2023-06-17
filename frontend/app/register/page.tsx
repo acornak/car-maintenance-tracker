@@ -4,8 +4,8 @@ import React, { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import zxcvbn from "zxcvbn";
 import Input from "@/components/Input";
-import { emailRegex } from "@/components/const";
-import { validateField } from "@/components/functions";
+import { emailRegex } from "@/common/const";
+import { validateField } from "@/common/functions";
 
 const RegisterPage: React.FC = () => {
 	const [firstName, setFirstName] = useState<string>("");
@@ -101,10 +101,7 @@ const RegisterPage: React.FC = () => {
 
 	const handleSubmit = async (event: FormEvent) => {
 		event.preventDefault();
-
-		if (!isFormValid) {
-			return;
-		}
+		if (!isFormValid) return;
 
 		router.push("/");
 	};
@@ -152,7 +149,7 @@ const RegisterPage: React.FC = () => {
 	]);
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+		<div className="flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
 			<div className="max-w-md w-full space-y-8">
 				<div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">

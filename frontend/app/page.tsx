@@ -1,10 +1,21 @@
-import Image from "next/image";
+import React from "react";
 
-export default function Home() {
+import CTA from "@/components/home/CTA";
+import Features from "@/components/home/Features";
+import Hero from "@/components/home/Hero";
+import Testimonials from "@/components/home/Testimonials";
+import Pricing from "@/components/home/Pricing";
+
+const HomePage: React.FC = () => {
 	return (
-		<div>
-			<h1>Home</h1>
-			<Image src="/images/nextjs.png" width={200} height={200} alt="" />
-		</div>
+		<>
+			<Hero />
+			<Features />
+			<Testimonials />
+			<Pricing />
+			<CTA />
+		</>
 	);
-}
+};
+
+export default HomePage;
