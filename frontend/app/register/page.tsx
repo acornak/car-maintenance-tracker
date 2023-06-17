@@ -7,6 +7,29 @@ import Input from "@/components/Input";
 import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
 
+async function registerUser(
+	firstName: string,
+	lastName: string,
+	nickname: string,
+	email: string,
+	password: string,
+) {
+	// TODO: add env vars
+	const response = await fetch("http://localhost:8000/api/v1/register", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			first_name: firstName,
+			last_name: lastName,
+			nickname: nickname,
+			email: email,
+			password: password,
+		}),
+	});
+	const data = await response.json();
+	return data;
+}
+
 const RegisterPage: React.FC = () => {
 	const [firstName, setFirstName] = useState<string>("");
 	const [lastName, setLastName] = useState<string>("");
@@ -103,7 +126,15 @@ const RegisterPage: React.FC = () => {
 		event.preventDefault();
 		if (!isFormValid) return;
 
-		router.push("/");
+		const data = await registerUser(
+			firstName,
+			lastName,
+			nickname,
+			email,
+			password,
+		);
+		console.log(data);
+		// router.push("/");
 	};
 
 	useEffect(() => {
