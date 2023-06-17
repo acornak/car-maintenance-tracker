@@ -1,58 +1,31 @@
 "use client";
-import React, { useState, FormEvent, useEffect } from "react";
+import React, { useState, FormEvent, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Input from "@/components/Input";
 import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
-
-async function handleLogin(email: string, password: string): Promise<any> {
-	const res = await fetch("http://localhost:8000/api/v1/login", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			email: email,
-			password: password,
-		}),
-	});
-
-	const data = await res.json();
-
-	if (res.ok) {
-		const { access_token, refresh_token } = data;
-		console.log(access_token, refresh_token);
-	}
-
-	return res;
-}
+import { useAuth } from "@/context/AuthContext";
 
 const LoginPage: React.FC = () => {
+	const { login, authError, isAuthenticated } = useAuth();
+	const router = useRouter();
+
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
-	const router = useRouter();
+
 	const [emailError, setEmailError] = useState<boolean>(false);
 	const [isFormValid, setIsFormValid] = useState<boolean>(false);
-	const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
-	const [error, setError] = useState<string>("");
 
 	const handleSubmit = async (event: FormEvent) => {
 		event.preventDefault();
-
-		const res = await handleLogin(email, password);
-		if (res.ok) {
-			setLoginSuccess(true);
-			router.push("/");
-		} else {
-			setLoginSuccess(false);
-			// Handle login failure
-			if (res.status === 401) {
-				// Invalid credentials
-				setError("Invalid credentials. Please try again.");
-			} else {
-				// Other failure scenarios
-				setError("Login failed. Please try again.");
-			}
-		}
+		await login(email, password);
 	};
+
+	useEffect(() => {
+		if (isAuthenticated) {
+			router.push("/");
+		}
+	}, [isAuthenticated]);
 
 	const validateEmail = (email: string) =>
 		setEmailError(!validateField(email, emailRegex));
@@ -80,6 +53,16 @@ const LoginPage: React.FC = () => {
 				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
 					<input type="hidden" name="remember" value="true" />
 					<div className="rounded-md shadow-sm space-y-4">
+						{authError && (
+							<div className="mt-4 text-red-600 text-center">
+								{authError}
+							</div>
+						)}
+						{isAuthenticated && (
+							<div className="mt-4 text-green-500 text-center">
+								Login successful! Redirecting...
+							</div>
+						)}
 						<Input
 							id="email"
 							type="email"
@@ -117,12 +100,6 @@ const LoginPage: React.FC = () => {
 						</button>
 					</div>
 				</form>
-				{error && <div className="mt-4 text-red-600">{error}</div>}
-				{loginSuccess && (
-					<div className="mt-4 text-green-500">
-						Login successful! Redirecting...
-					</div>
-				)}
 			</div>
 		</div>
 	);

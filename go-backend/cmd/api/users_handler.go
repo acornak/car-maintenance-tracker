@@ -60,8 +60,28 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 		app.errorJson(w, errors.New("failed to create refresh token"), http.StatusInternalServerError)
 	}
 
+	// Set the access token as an HTTP-only cookie
+	accessCookie := http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true, // Set to true if using HTTPS
+	}
+	http.SetCookie(w, &accessCookie)
+
+	// Set the refresh token as an HTTP-only cookie
+	refreshCookie := http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true, // Set to true if using HTTPS
+	}
+	http.SetCookie(w, &refreshCookie)
+
 	// Send the token in the response
-	app.writeJson(w, http.StatusOK, map[string]string{"access_token": accessToken, "refresh_token": refreshToken}, "")
+	app.writeJson(w, http.StatusOK, map[string]string{"message": "Login successful!"}, "")
 }
 
 func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) {

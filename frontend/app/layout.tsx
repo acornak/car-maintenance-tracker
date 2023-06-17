@@ -3,6 +3,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import Head from "next/head";
 import Footer from "@/components/Footer";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,9 +24,11 @@ export default function RootLayout({
 			</Head>
 			<body className={`${inter.className} bg-white`}>
 				<div className="flex flex-col min-h-screen">
-					<Navbar />
-					<div className="flex-grow">{children}</div>
-					<Footer />
+					<AuthProvider>
+						<Navbar />
+						<div className="flex-grow">{children}</div>
+						<Footer />
+					</AuthProvider>
 				</div>
 			</body>
 		</html>
