@@ -168,13 +168,13 @@ export default function AddCarModal({
 							}))}
 						/>
 						<Input
-							id="licensePlate"
+							id="license_plate"
 							type="text"
 							placeholder="ABC-123"
 							value={car.license_plate || ""}
 							onChange={handleChange}
 							label="License Plate"
-							name="licensePlate"
+							name="license_plate"
 						/>
 						<Input
 							id="vin"
