@@ -55,13 +55,15 @@ async function registerUser(
 			password: password,
 		}),
 	});
+
+	// Always return the JSON response whether it's successful or not
 	const data = await res.json();
 
 	if (!res.ok) {
-		throw new Error(data.message);
+		throw new Error(data.message || "Unknown error");
 	}
 
-	return data;
+	return data; // Ensure something is returned
 }
 
 const RegisterPage: React.FC = () => {
@@ -198,12 +200,9 @@ const RegisterPage: React.FC = () => {
 				password,
 			);
 
-			if (response.success) {
-				setSuccessfulRegister(true);
-			} else {
-				setSuccessfulRegister(false);
-			}
+			setSuccessfulRegister(true);
 		} catch (error) {
+			setSuccessfulRegister(false);
 			console.error(error);
 			// handle error as needed, possibly setting an error state here
 		}
