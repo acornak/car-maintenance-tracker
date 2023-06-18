@@ -114,9 +114,9 @@ export default function AddCarModal({
 			price: null,
 			image: "",
 			description: "",
-			licensePlate: "",
+			license_plate: "",
 			vin: "",
-			createdAt: "",
+			created_at: "",
 		});
 	};
 
@@ -171,7 +171,7 @@ export default function AddCarModal({
 							id="licensePlate"
 							type="text"
 							placeholder="ABC-123"
-							value={car.licensePlate || ""}
+							value={car.license_plate || ""}
 							onChange={handleChange}
 							label="License Plate"
 							name="licensePlate"

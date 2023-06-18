@@ -1,13 +1,14 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 
 const Navbar: React.FC = () => {
 	const { isAuthenticated, logout, user } = useAuth();
 	const router = useRouter();
+	const pathname = usePathname();
 	const dropdownRef: any = useRef(null);
 
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -53,14 +54,22 @@ const Navbar: React.FC = () => {
 						<div className="hidden lg:ml-6 lg:flex lg:space-x-8">
 							<Link
 								href="/"
-								className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-base font-medium"
+								className={`${
+									pathname === "/"
+										? "text-gray-900 border-indigo-500"
+										: "text-gray-500"
+								} inline-flex items-center px-1 pt-1 border-b-2 text-base font-medium`}
 							>
 								Home
 							</Link>
 							{isAuthenticated && (
 								<Link
 									href="/garage"
-									className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-base font-medium"
+									className={`${
+										pathname.includes("/garage")
+											? "text-gray-900 border-indigo-500"
+											: "text-gray-500"
+									} inline-flex items-center px-1 pt-1 border-b-2 text-base font-medium`}
 								>
 									My Garage
 								</Link>

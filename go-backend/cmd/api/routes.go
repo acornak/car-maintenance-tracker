@@ -26,6 +26,7 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc(apiVersion+"/cars/models", app.getAllModelsByMakerIDHandler)
 	mux.HandleFunc(apiVersion+"/cars/model", app.getModelByIDHandler)
+	mux.HandleFunc(apiVersion+"/cars/get", app.getCarByIDHandler)
 
 	mux.HandleFunc(apiVersion+"/cars/get-by-user", app.getCarsByUserHandler)
 

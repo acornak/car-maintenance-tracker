@@ -4,42 +4,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Car } from "@/common/types";
 import AddCarModal from "./AddModal";
-import { useAuth } from "@/context/AuthContext";
-
-async function getMakerByID(id: number): Promise<string> {
-	const res = await fetch(`/api/v1/cars/maker?id=${id}`, {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
-
-	if (!res.ok) {
-		return "";
-	}
-
-	const data = await res.json();
-	return data.maker.name;
-}
-
-async function getModelByID(id: number): Promise<string> {
-	const res = await fetch(`/api/v1/cars/model?id=${id}`, {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
-
-	if (!res.ok) {
-		return "";
-	}
-
-	const data = await res.json();
-	return data.model.name;
-}
+import { fetchCars } from "@/common/functions";
+import AuthLayout from "./layout";
 
 export default function Garage() {
-	const { isAuthenticated } = useAuth();
 	const router = useRouter();
 	const [showModal, setShowModal] = useState<boolean>(false);
 	const [addCarSuccess, setAddCarSuccess] = useState<boolean | null>(null);
@@ -55,37 +23,13 @@ export default function Garage() {
 	};
 
 	useEffect(() => {
-		if (isAuthenticated) {
-			fetchCars().then((data) => {
-				if (!data) {
-					return;
-				}
-				setCars(data);
-			});
-		}
-	}, [isAuthenticated, addCarSuccess]);
-
-	async function fetchCars(): Promise<Car[]> {
-		const res = await fetch("/api/v1/cars/get-by-user", {
-			credentials: "include",
+		fetchCars().then((data) => {
+			if (!data) {
+				return;
+			}
+			setCars(data);
 		});
-		const data = await res.json();
-
-		if (!res.ok) {
-			setFetchCarsSuccess(false);
-		}
-
-		// for each car in cars, fetch data about model and brand by id:
-		for (let i = 0; i < data.cars.length; i++) {
-			const car = data.cars[i];
-			const brand = await getMakerByID(car.brand_id);
-			const model = await getModelByID(car.model_id);
-			car.brand_name = brand;
-			car.model_name = model;
-		}
-
-		return data.cars;
-	}
+	}, [addCarSuccess]);
 
 	useEffect(() => {
 		let timer: NodeJS.Timeout | null = null;
@@ -125,7 +69,7 @@ export default function Garage() {
 			body: JSON.stringify({
 				brand_id: car.brand_id,
 				model_id: car.model_id,
-				license_plate: car.licensePlate,
+				license_plate: car.license_plate,
 				vin: car.vin,
 				year: car.year,
 				color: car.color,
@@ -144,28 +88,8 @@ export default function Garage() {
 		return;
 	}
 
-	if (!isAuthenticated) {
-		return (
-			<div className="flex flex-col items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
-				<div className="max-w-5xl space-y-8 w-full text-center">
-					<h1 className="text-4xl font-bold mb-5">
-						You must be logged in to view this page.
-					</h1>
-				</div>
-				<div className="text-center">
-					<button
-						className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-						onClick={() => router.push("/login")}
-					>
-						Login
-					</button>
-				</div>
-			</div>
-		);
-	}
-
 	return (
-		<>
+		<AuthLayout>
 			{showModal && (
 				<AddCarModal
 					onClose={() => setShowModal(false)}
@@ -223,7 +147,12 @@ export default function Garage() {
 									</div>
 									<div className="px-6 pt-4 pb-2">
 										{/* Add action buttons here */}
-										<button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+										<button
+											className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+											onClick={() =>
+												router.push(`/garage/${car.id}`)
+											}
+										>
 											View Details
 										</button>
 									</div>
@@ -263,6 +192,6 @@ export default function Garage() {
 					</div>
 				</div>
 			)}
-		</>
+		</AuthLayout>
 	);
 }

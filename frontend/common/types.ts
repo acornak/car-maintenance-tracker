@@ -4,7 +4,7 @@ export type User = {
 	lastName: string;
 	nickname: string;
 	email: string;
-	createdAt: string;
+	created_at: string;
 };
 
 export type Car = {
@@ -16,11 +16,11 @@ export type Car = {
 	price: number | null;
 	image: string | null;
 	description: string | null;
-	licensePlate: string | null;
+	license_plate: string | null;
 	vin: string | null;
 	brand_name?: string | null;
 	model_name?: string | null;
-	createdAt: string | null;
+	created_at: string | null;
 };
 
 export type CarMaker = {

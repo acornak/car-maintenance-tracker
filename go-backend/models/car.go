@@ -146,3 +146,14 @@ func (m *DBModel) GetModelByID(modelID int) (CarModel, error) {
 
 	return model, nil
 }
+
+func (m *DBModel) GetCarByID(carID int) (Car, error) {
+	var car Car
+	row := m.DB.QueryRow("SELECT id, user_id, brand_id, model_id, year, color, price, image, description, license_plate, vin, created_at FROM users_cars WHERE id=$1", carID)
+	err := row.Scan(&car.ID, &car.UserId, &car.BrandID, &car.ModelID, &car.Year, &car.Color, &car.Price, &car.Image, &car.Description, &car.LicensePlate, &car.VIN, &car.CreatedAt)
+	if err != nil {
+		return car, err
+	}
+
+	return car, nil
+}

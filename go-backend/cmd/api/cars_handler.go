@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -210,4 +211,68 @@ func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	app.writeJson(w, http.StatusOK, carModel, "model")
+}
+
+func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Get token from the cookie
+	cookie, err := r.Cookie("access_token")
+	if err != nil {
+		sugar.Error(err)
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			sugar.Error("no cookie found")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// For any other type of error, return a bad request status
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	tokenString := cookie.Value
+	isValid, err := token.CheckTokenValidity(tokenString)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if !isValid {
+		sugar.Error("token is not valid")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	userId, err := token.GetUserIdFromToken(tokenString)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	// Get the id parameter from the request URL
+	id := r.URL.Query().Get("id")
+
+	// Parse the id parameter as an integer
+	carId, err := strconv.Atoi(id)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	car, err := app.models.DB.GetCarByID(carId)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
+		return
+	}
+
+	if car.UserId != userId {
+		sugar.Error("user is not authorized to get this car")
+		app.errorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
+		return
+	}
+
+	app.writeJson(w, http.StatusOK, car, "car")
 }
