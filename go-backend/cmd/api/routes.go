@@ -13,8 +13,8 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc(apiVersion+"/login", app.loginHandler)
 	mux.HandleFunc(apiVersion+"/refresh-token", app.refreshTokenHandler)
 	mux.HandleFunc(apiVersion+"/register", app.registerHandler)
-	mux.HandleFunc(apiVersion+"/nicknames", app.nicknamesHandler)
-	mux.HandleFunc(apiVersion+"/emails", app.emailsHandler)
+	mux.HandleFunc(apiVersion+"/check-nickname", app.checkNicknameHandler)
+	mux.HandleFunc(apiVersion+"/check-email", app.checkEmailHandler)
 	// mux.HandleFunc(apiVersion+"/update-user", app.registerHandler)
 
 	// mux.Handle(apiVersion+"/user", app.validateTokenMiddleware(http.HandlerFunc(app.getUserHandler)))

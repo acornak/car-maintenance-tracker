@@ -70,10 +70,6 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 		Description:  req.Description,
 	}
 
-	sugar.Info("car", car)
-	sugar.Info("req BrandID", req.BrandID)
-	sugar.Info("req ModelID", req.ModelID)
-
 	// Insert the car into the database
 	err = app.models.DB.InsertCar(car)
 	if err != nil {

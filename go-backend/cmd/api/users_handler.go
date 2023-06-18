@@ -177,29 +177,33 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Check if email is unique
-	_, err = app.models.DB.GetUserByEmail(req.Email)
-	if err == nil {
-		err = errors.New("a user with the email '" + req.Email + "' already exists")
-		sugar.Error(err)
-		app.errorJson(w, err, http.StatusBadRequest)
-		return
-	}
-
-	// Check if nickname is unique
-	nicknames, err := app.models.DB.GetAllNicknames()
+	exists, err := app.models.DB.CheckEmailExists(req.Email)
 	if err != nil {
 		sugar.Error(err)
 		app.errorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	for _, nickname := range nicknames {
-		if nickname == req.Nickname {
-			err = errors.New("a user with the nickname '" + req.Nickname + "' already exists")
-			sugar.Error(err)
-			app.errorJson(w, err, http.StatusBadRequest)
-			return
-		}
+	if exists {
+		err = errors.New("a user with the email address '" + req.Email + "' already exists")
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	// Check if nickname is unique
+	exists, err = app.models.DB.CheckNicknameExists(req.Nickname)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if exists {
+		err = errors.New("a user with the nickname '" + req.Nickname + "' already exists")
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
 	}
 
 	user := models.User{
@@ -222,30 +226,59 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	sugar.Info("successfully registered user: ", user.Email)
 }
 
-func (app *application) nicknamesHandler(w http.ResponseWriter, r *http.Request) {
-	nicknames, err := app.models.DB.GetAllNicknames()
+func (app *application) checkNicknameHandler(w http.ResponseWriter, r *http.Request) {
+	type checkNicknameRequest struct {
+		Nickname string `json:"nickname"`
+	}
+	var req checkNicknameRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	exists, err := app.models.DB.CheckNicknameExists(req.Nickname)
 	if err != nil {
 		sugar.Error(err)
 		app.errorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	sugar.Info("successfully retrieved all nicknames: ", nicknames)
-
-	app.writeJson(w, http.StatusOK, nicknames, "nicknames")
+	if exists {
+		app.writeJson(w, http.StatusOK, nil, "")
+		sugar.Info("nickname already exists: ", req.Nickname)
+	} else {
+		app.writeJson(w, http.StatusNotFound, nil, "")
+	}
 }
 
-func (app *application) emailsHandler(w http.ResponseWriter, r *http.Request) {
-	emails, err := app.models.DB.GetAllEmails()
+func (app *application) checkEmailHandler(w http.ResponseWriter, r *http.Request) {
+	type checkEmailRequest struct {
+		Email string `json:"email"`
+	}
+	// Parse the request body into a loginRequest struct
+	var req checkEmailRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	exists, err := app.models.DB.CheckEmailExists(req.Email)
 	if err != nil {
 		sugar.Error(err)
 		app.errorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	sugar.Info("successfully retrieved all emails: ", emails)
-
-	app.writeJson(w, http.StatusOK, emails, "emails")
+	if exists {
+		app.writeJson(w, http.StatusOK, nil, "")
+		sugar.Info("email already exists: ", req.Email)
+	} else {
+		app.writeJson(w, http.StatusNotFound, nil, "")
+	}
 }
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
