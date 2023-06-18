@@ -86,6 +86,63 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	app.writeJson(w, http.StatusOK, user, "user")
 }
 
+func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	// Get token from the cookie
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		sugar.Error(err)
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			sugar.Error("no cookie found")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// For any other type of error, return a bad request status
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	tokenString := cookie.Value
+	isValid, err := token.CheckTokenValidity(tokenString)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if !isValid {
+		sugar.Error("token is not valid")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	userId, err := token.GetUserIdFromToken(tokenString)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := token.GenerateAccessToken(userId)
+	if err != nil {
+		app.errorJson(w, errors.New("failed to create access token"), http.StatusInternalServerError)
+		return
+	}
+
+	// Set the access token as an HTTP-only cookie
+	accessCookie := http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true if using HTTPS
+	}
+	http.SetCookie(w, &accessCookie)
+
+	app.writeJson(w, http.StatusOK, nil, "")
+	sugar.Info("successfully refreshed token")
+}
+
 func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) {
 	type registerRequest struct {
 		FirstName string `json:"first_name"`

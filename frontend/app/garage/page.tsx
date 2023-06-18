@@ -6,11 +6,46 @@ import { Car } from "@/common/types";
 import AddCarModal from "./AddModal";
 import { useAuth } from "@/context/AuthContext";
 
+async function getMakerByID(id: number): Promise<string> {
+	const res = await fetch(`/api/v1/cars/maker?id=${id}`, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	if (!res.ok) {
+		return "";
+	}
+
+	const data = await res.json();
+	return data.maker.name;
+}
+
+async function getModelByID(id: number): Promise<string> {
+	const res = await fetch(`/api/v1/cars/model?id=${id}`, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	if (!res.ok) {
+		return "";
+	}
+
+	const data = await res.json();
+	return data.model.name;
+}
+
 export default function Garage() {
 	const { isAuthenticated } = useAuth();
 	const router = useRouter();
 	const [showModal, setShowModal] = useState<boolean>(false);
 	const [addCarSuccess, setAddCarSuccess] = useState<boolean | null>(null);
+	const [fetchCarsSuccess, setFetchCarsSuccess] = useState<boolean | null>(
+		null,
+	);
 	const [newCar, setNewCar] = useState<Car>({} as Car);
 	const [cars, setCars] = useState<Car[]>([]);
 
@@ -37,11 +72,34 @@ export default function Garage() {
 		const data = await res.json();
 
 		if (!res.ok) {
-			setAddCarSuccess(false);
+			setFetchCarsSuccess(false);
+		}
+
+		// for each car in cars, fetch data about model and brand by id:
+		for (let i = 0; i < data.cars.length; i++) {
+			const car = data.cars[i];
+			const brand = await getMakerByID(car.brand_id);
+			const model = await getModelByID(car.model_id);
+			car.brand_name = brand;
+			car.model_name = model;
 		}
 
 		return data.cars;
 	}
+
+	useEffect(() => {
+		let timer: NodeJS.Timeout | null = null;
+
+		timer = setTimeout(() => {
+			setFetchCarsSuccess(null);
+		}, 5000);
+
+		return () => {
+			if (timer) {
+				clearTimeout(timer);
+			}
+		};
+	}, [fetchCarsSuccess]);
 
 	useEffect(() => {
 		let timer: NodeJS.Timeout | null = null;
@@ -64,7 +122,17 @@ export default function Garage() {
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify(car),
+			body: JSON.stringify({
+				brand_id: car.brand_id,
+				model_id: car.model_id,
+				license_plate: car.licensePlate,
+				vin: car.vin,
+				year: car.year,
+				color: car.color,
+				price: car.price,
+				description: car.description,
+				image: car.image,
+			}),
 		});
 
 		if (!res.ok) {
@@ -132,8 +200,12 @@ export default function Garage() {
 								>
 									<Image
 										className="w-full h-64 object-cover"
-										src={car.image}
-										alt={car.brand + " " + car.model}
+										src={car.image!}
+										alt={
+											car.brand_name +
+											" " +
+											car.model_name
+										}
 										width={500}
 										height={500}
 									/>
@@ -141,9 +213,9 @@ export default function Garage() {
 										<div className="font-bold text-xl mb-2">
 											{car.year +
 												" " +
-												car.brand +
+												car.brand_name +
 												" " +
-												car.model}
+												car.model_name}
 										</div>
 										<p className="text-gray-700 text-base">
 											{car.description}
@@ -167,6 +239,16 @@ export default function Garage() {
 						<strong className="font-bold">Oops!</strong>
 						<span className="block sm:inline ml-2">
 							There was an error adding your car.
+						</span>
+					</div>
+				</div>
+			)}
+			{fetchCarsSuccess === false && (
+				<div className="fixed top-0 left-0 right-0 flex items-center justify-center">
+					<div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded relative">
+						<strong className="font-bold">Oops!</strong>
+						<span className="block sm:inline ml-2">
+							There was an error fetching your garage.
 						</span>
 					</div>
 				</div>

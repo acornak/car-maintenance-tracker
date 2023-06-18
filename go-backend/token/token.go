@@ -23,7 +23,7 @@ func GenerateAccessToken(userId int) (string, error) {
 
 func GenerateRefreshToken(userId int) (string, error) {
 	claims := &jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 60 * 24 * 7)),
 		ID:        strconv.Itoa(userId),
 		Issuer:    "car-maintenance-tracker",
 		Subject:   "refresh",

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Car } from "@/common/types";
+import { Car, CarMaker, CarModel } from "@/common/types";
 import { Input, Select } from "@/components/Input";
 
 const styles = {
@@ -31,6 +31,34 @@ type AddCarModalProps = {
 	setCar: (car: Car) => void;
 };
 
+async function getAllCarMakers(): Promise<CarMaker[]> {
+	const res = await fetch("/api/v1/cars/makers");
+	const data = await res.json();
+
+	if (!res.ok) {
+		throw new Error(data.message);
+	}
+
+	return data.makers;
+}
+
+async function getAllModelsByMakerID(makerID: number): Promise<CarModel[]> {
+	const res = await fetch(`/api/v1/cars/models`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ maker_id: makerID }),
+	});
+	const data = await res.json();
+
+	if (!res.ok) {
+		throw new Error(data.message);
+	}
+
+	return data.models;
+}
+
 export default function AddCarModal({
 	onClose,
 	onSubmit,
@@ -38,16 +66,36 @@ export default function AddCarModal({
 	setCar,
 }: AddCarModalProps) {
 	const [requiredFieldsFilled, setRequiredFieldsFilled] = useState(false);
+	const [carMakers, setCarMakers] = useState<CarMaker[]>([]);
+	const [carModels, setCarModels] = useState<CarModel[]>([]);
 
 	useEffect(() => {
-		const { brand, model, image } = car;
+		const { brand_id, model_id, image } = car;
 		const requiredFieldsFilled =
-			brand !== "" && model !== "" && image !== "";
+			brand_id && model_id && image ? true : false;
 		setRequiredFieldsFilled(requiredFieldsFilled);
+		if (brand_id && brand_id !== 0) {
+			getAllModelsByMakerID(brand_id).then((models) => {
+				setCarModels(models);
+			});
+		}
 	}, [car]);
 
-	const handleChange = (e: any) => {
-		setCar({ ...car, [e.target.id]: e.target.value });
+	useEffect(() => {
+		getAllCarMakers().then((makers) => {
+			setCarMakers(makers);
+		});
+	}, []);
+
+	const handleChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+	) => {
+		const { id, value } = e.target;
+		const fieldValue =
+			id === "brand_id" || id === "model_id"
+				? parseInt(value, 10)
+				: value;
+		setCar({ ...car, [id]: fieldValue });
 	};
 
 	const handleSubmit = (e: any) => {
@@ -58,14 +106,16 @@ export default function AddCarModal({
 
 	const resetForm = () => {
 		setCar({
-			id: 0,
-			brand: "",
-			model: "",
-			year: 0,
+			id: null,
+			brand_id: null,
+			model_id: null,
+			year: null,
 			color: "",
-			price: 0,
+			price: null,
 			image: "",
 			description: "",
+			licensePlate: "",
+			vin: "",
 			createdAt: "",
 		});
 	};
@@ -96,44 +146,50 @@ export default function AddCarModal({
 				<form onSubmit={handleSubmit}>
 					<div className="rounded-md shadow-sm space-y-4">
 						<Select
-							id="brand"
-							value={car.brand || ""}
+							id="brand_id"
+							value={car.brand_id || ""}
 							onChange={handleChange}
 							label="Car Brand (required)"
-							name="brand"
-							options={[
-								{ value: "Audi", label: "Audi" },
-								{ value: "BMW", label: "BMW" },
-								{ value: "Mercedes", label: "Mercedes" },
-								{ value: "Volkswagen", label: "Volkswagen" },
-								{ value: "Porsche", label: "Porsche" },
-							]}
+							name="brand_id"
+							options={carMakers.map((maker) => ({
+								value: maker.id,
+								label: maker.name,
+							}))}
 						/>
 						<Select
-							id="model"
-							value={car.model || ""}
+							id="model_id"
+							value={car.model_id || ""}
 							onChange={handleChange}
 							label="Car Model (required)"
-							name="model"
-							// TODO
-							options={[
-								{ value: "A1", label: "A1" },
-								{ value: "A2", label: "A2" },
-								{ value: "A3", label: "A3" },
-								{ value: "A4", label: "A4" },
-								{ value: "A5", label: "A5" },
-								{ value: "A6", label: "A6" },
-								{ value: "A7", label: "A7" },
-								{ value: "A8", label: "A8" },
-								{ value: "Q2", label: "Q2" },
-								{ value: "Q3", label: "Q3" },
-							]}
+							name="model_id"
+							options={carModels.map((model) => ({
+								value: model.id,
+								label: model.name,
+							}))}
+						/>
+						<Input
+							id="licensePlate"
+							type="text"
+							placeholder="ABC-123"
+							value={car.licensePlate || ""}
+							onChange={handleChange}
+							label="License Plate"
+							name="licensePlate"
+						/>
+						<Input
+							id="vin"
+							type="text"
+							placeholder="12345678901234567"
+							value={car.vin || ""}
+							onChange={handleChange}
+							label="VIN"
+							name="vin"
 						/>
 						<Input
 							id="year"
 							type="number"
 							placeholder="2019"
-							value={car.year}
+							value={car.year || ""}
 							onChange={handleChange}
 							label="Year"
 							name="year"
@@ -142,7 +198,7 @@ export default function AddCarModal({
 							id="color"
 							type="text"
 							placeholder="black metallic"
-							value={car.color}
+							value={car.color || ""}
 							onChange={handleChange}
 							label="Color"
 							name="color"
@@ -151,7 +207,7 @@ export default function AddCarModal({
 							id="price"
 							type="number"
 							placeholder="10000"
-							value={car.price}
+							value={car.price || ""}
 							onChange={handleChange}
 							label="Price"
 							name="price"
@@ -160,7 +216,7 @@ export default function AddCarModal({
 							id="image"
 							type="text"
 							placeholder="https://example.com/image.jpg"
-							value={car.image}
+							value={car.image || ""}
 							onChange={handleChange}
 							label="Image URL (required)"
 							name="image"
@@ -169,7 +225,7 @@ export default function AddCarModal({
 							id="description"
 							type="text"
 							placeholder="This is my weekend car"
-							value={car.description}
+							value={car.description || ""}
 							onChange={handleChange}
 							label="Description"
 							name="description"

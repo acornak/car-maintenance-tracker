@@ -66,6 +66,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		return () => window.removeEventListener("storage", checkAuthStatus);
 	}, [isAuthenticated]);
 
+	useEffect(() => {
+		console.log("refreshing token...");
+		// Function to refresh the token
+		async function refreshToken() {
+			const res = await fetch("/api/v1/refresh-token", {
+				method: "POST",
+				credentials: "include",
+			});
+
+			if (res.ok) {
+				setIsAuthenticated(true);
+				setAuthError("");
+				Cookies.set("auth_status", "true");
+				const { user } = await res.json();
+				setUser(user);
+				console.log("token refreshed");
+			} else if (res.status === 401) {
+				// refresh token is invalid, log the user out
+				logout();
+				console.error("failed to refresh token");
+			} else {
+				// Server error, handle accordingly
+				console.error("Server error during token refresh");
+			}
+		}
+
+		// This value can be adjusted based on JWT's expiry
+		const intervalId = setInterval(refreshToken, 14 * 60 * 1000);
+
+		// Cleanup interval on component unmount
+		return () => clearInterval(intervalId);
+	}, []);
+
 	async function login(email: string, password: string) {
 		try {
 			// Make your login request and handle the response

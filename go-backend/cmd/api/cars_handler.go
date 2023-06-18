@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/acornak/car-maintenance-tracker/models"
 	"github.com/acornak/car-maintenance-tracker/token"
@@ -56,15 +57,21 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a new car
 	car := models.Car{
-		UserId:      userId,
-		Brand:       req.Brand,
-		Model:       req.Model,
-		Year:        req.Year,
-		Color:       req.Color,
-		Price:       req.Price,
-		Image:       req.Image,
-		Description: req.Description,
+		UserId:       userId,
+		BrandID:      req.BrandID,
+		ModelID:      req.ModelID,
+		Year:         req.Year,
+		Color:        req.Color,
+		Price:        req.Price,
+		Image:        req.Image,
+		LicensePlate: req.LicensePlate,
+		VIN:          req.VIN,
+		Description:  req.Description,
 	}
+
+	sugar.Info("car", car)
+	sugar.Info("req BrandID", req.BrandID)
+	sugar.Info("req ModelID", req.ModelID)
 
 	// Insert the car into the database
 	err = app.models.DB.InsertCar(car)
@@ -123,4 +130,84 @@ func (app *application) getCarsByUserHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	app.writeJson(w, http.StatusOK, cars, "cars")
+}
+
+func (app *application) getAllCarMakersHandler(w http.ResponseWriter, r *http.Request) {
+	carMakers, err := app.models.DB.GetAllCarMakers()
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJson(w, http.StatusOK, carMakers, "makers")
+}
+
+func (app *application) getAllModelsByMakerIDHandler(w http.ResponseWriter, r *http.Request) {
+	type getModelsRequest struct {
+		MakerID int `json:"maker_id"`
+	}
+	// Parse the request body into a loginRequest struct
+	var req getModelsRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	carModels, err := app.models.DB.GetModelsByMakerID(req.MakerID)
+
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJson(w, http.StatusOK, carModels, "models")
+}
+
+func (app *application) getMakerByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the id parameter from the request URL
+	id := r.URL.Query().Get("id")
+
+	// Parse the id parameter as an integer
+	makerID, err := strconv.Atoi(id)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	carMaker, err := app.models.DB.GetMakerByID(makerID)
+
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJson(w, http.StatusOK, carMaker, "maker")
+}
+
+func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	// Parse the id parameter as an integer
+	modelID, err := strconv.Atoi(id)
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	carModel, err := app.models.DB.GetModelByID(modelID)
+
+	if err != nil {
+		sugar.Error(err)
+		app.errorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	app.writeJson(w, http.StatusOK, carModel, "model")
 }

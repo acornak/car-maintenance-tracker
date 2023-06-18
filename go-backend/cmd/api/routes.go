@@ -11,6 +11,7 @@ func (app *application) routes() http.Handler {
 	// Define your routes without any prefix
 	mux.HandleFunc(apiVersion+"/status", app.statusHandler)
 	mux.HandleFunc(apiVersion+"/login", app.loginHandler)
+	mux.HandleFunc(apiVersion+"/refresh-token", app.refreshTokenHandler)
 	mux.HandleFunc(apiVersion+"/register", app.registerHandler)
 	mux.HandleFunc(apiVersion+"/nicknames", app.nicknamesHandler)
 	mux.HandleFunc(apiVersion+"/emails", app.emailsHandler)
@@ -20,6 +21,12 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc(apiVersion+"/user", app.getUserHandler)
 
 	mux.HandleFunc(apiVersion+"/cars/add", app.addCarHandler)
+	mux.HandleFunc(apiVersion+"/cars/makers", app.getAllCarMakersHandler)
+	mux.HandleFunc(apiVersion+"/cars/maker", app.getMakerByIDHandler)
+
+	mux.HandleFunc(apiVersion+"/cars/models", app.getAllModelsByMakerIDHandler)
+	mux.HandleFunc(apiVersion+"/cars/model", app.getModelByIDHandler)
+
 	mux.HandleFunc(apiVersion+"/cars/get-by-user", app.getCarsByUserHandler)
 
 	return app.enableCORS(mux)
