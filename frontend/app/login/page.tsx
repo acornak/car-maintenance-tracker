@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, FormEvent, useEffect, use } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Input from "@/components/Input";
+import { Input } from "@/components/Input";
 import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
 import { useAuth } from "@/context/AuthContext";
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
 		if (isAuthenticated) {
 			router.push("/");
 		}
-	}, [isAuthenticated]);
+	}, [isAuthenticated, router]);
 
 	const validateEmail = (email: string) =>
 		setEmailError(!validateField(email, emailRegex));

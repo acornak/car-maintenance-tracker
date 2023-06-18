@@ -1,19 +1,30 @@
 "use client";
 // pages/register.tsx
 import React, { useState, FormEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import zxcvbn from "zxcvbn";
-import Input from "@/components/Input";
+import { Input } from "@/components/Input";
 import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
+import { useAuth } from "@/context/AuthContext";
 
 async function existingNicknames(): Promise<[string]> {
-	const res = await fetch("http://localhost:8000/api/v1/nicknames", {
+	const res = await fetch("/api/v1/nicknames", {
 		method: "GET",
 		headers: { "Content-Type": "application/json" },
 	});
 	const data: any = await res.json();
 	return data.nicknames;
+}
+
+async function existingEmails(): Promise<[string]> {
+	const res = await fetch("/api/v1/emails", {
+		method: "GET",
+		headers: { "Content-Type": "application/json" },
+	});
+	const data: any = await res.json();
+	return data.emails;
 }
 
 async function registerUser(
@@ -24,7 +35,7 @@ async function registerUser(
 	password: string,
 ) {
 	// TODO: add env vars
-	const res = await fetch("http://localhost:8000/api/v1/register", {
+	const res = await fetch("/api/v1/register", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
@@ -40,6 +51,9 @@ async function registerUser(
 }
 
 const RegisterPage: React.FC = () => {
+	const { isAuthenticated } = useAuth();
+	const router = useRouter();
+
 	const [firstName, setFirstName] = useState<string>("");
 	const [lastName, setLastName] = useState<string>("");
 	const [nickname, setNickname] = useState<string>("");
@@ -48,6 +62,7 @@ const RegisterPage: React.FC = () => {
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
 	const [emailError, setEmailError] = useState<boolean>(false);
+	const [emailExistsError, setEmailExistsError] = useState<boolean>(false);
 	const [nicknameError, setNicknameError] = useState<boolean>(false);
 	const [emailConfirmError, setEmailConfirmError] = useState<boolean>(false);
 	const [passwordConfirmError, setPasswordConfirmError] =
@@ -66,8 +81,17 @@ const RegisterPage: React.FC = () => {
 	const passwordRegex =
 		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_\-+=?/\\|~`:;"';]).{8,}$/;
 
-	const validateEmail = (email: string) =>
+	const validateEmail = async (email: string) => {
 		setEmailError(!validateField(email, emailRegex));
+
+		const existingEmailsList = await existingEmails();
+		if (existingEmailsList.includes(email)) {
+			setEmailExistsError(true);
+			return;
+		} else {
+			setEmailExistsError(false);
+		}
+	};
 
 	const validateConfirmEmail = (value: string) => {
 		setEmailConfirmError(value !== email);
@@ -77,7 +101,9 @@ const RegisterPage: React.FC = () => {
 		setPasswordConfirmError(value !== password);
 
 	const validateNickname = async (nickname: string) => {
-		const nicknames: [string] = await existingNicknames();
+		const nicknames: string[] = await existingNicknames();
+		if (nicknames.length === 0) return;
+
 		if (nicknames.includes(nickname)) {
 			setNicknameError(true);
 		} else {
@@ -105,6 +131,12 @@ const RegisterPage: React.FC = () => {
 		updatePasswordStrength(password);
 		updatePasswordRequirements(password);
 	}, [password]);
+
+	useEffect(() => {
+		if (isAuthenticated) {
+			router.push("/garage");
+		}
+	}, [isAuthenticated, router]);
 
 	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = event.target;
@@ -144,15 +176,9 @@ const RegisterPage: React.FC = () => {
 		event.preventDefault();
 		if (!isFormValid) return;
 
-		const data = await registerUser(
-			firstName,
-			lastName,
-			nickname,
-			email,
-			password,
-		);
-		console.log(data);
-		// router.push("/");
+		await registerUser(firstName, lastName, nickname, email, password);
+
+		router.push("/login");
 	};
 
 	useEffect(() => {
@@ -195,6 +221,9 @@ const RegisterPage: React.FC = () => {
 		confirmEmail,
 		password,
 		confirmPassword,
+		emailConfirmError,
+		passwordConfirmError,
+		passwordRegex,
 	]);
 
 	return (
@@ -248,6 +277,11 @@ const RegisterPage: React.FC = () => {
 						{emailError && (
 							<div className="mb-4 text-sm text-red-600">
 								Invalid email format.
+							</div>
+						)}
+						{emailExistsError && (
+							<div className="mb-4 text-sm text-red-600">
+								User with this email already exists.
 							</div>
 						)}
 						<Input

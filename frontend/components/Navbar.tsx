@@ -3,9 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import Image from "next/image";
 
 const Navbar: React.FC = () => {
-	const { isAuthenticated, logout } = useAuth();
+	const { isAuthenticated, logout, user } = useAuth();
 	const router = useRouter();
 	const dropdownRef: any = useRef(null);
 
@@ -40,10 +41,12 @@ const Navbar: React.FC = () => {
 					<div className="flex px-2 lg:px-0">
 						<div className="flex-shrink-0 flex items-center">
 							<Link href="/">
-								<img
+								<Image
 									className="block h-12 w-auto"
 									src="/logo.png"
 									alt="Car Maintenance Tracker"
+									width={500}
+									height={500}
 								/>{" "}
 							</Link>
 						</div>
@@ -54,6 +57,14 @@ const Navbar: React.FC = () => {
 							>
 								Home
 							</Link>
+							{isAuthenticated && (
+								<Link
+									href="/garage"
+									className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-base font-medium"
+								>
+									My Garage
+								</Link>
+							)}
 						</div>
 					</div>
 					<div className="flex-1 flex items-center justify-center px-2 lg:ml-6 lg:justify-end">
@@ -67,10 +78,15 @@ const Navbar: React.FC = () => {
 											aria-label="User menu"
 											aria-haspopup="true"
 										>
-											<img
+											<div className="whitespace-nowrap text-base font-medium text-gray-500 hover:text-gray-900 px-4 py-2 ">
+												{`Welcome, ${user.nickname}!`}
+											</div>
+											<Image
 												className="h-8 w-8 rounded-full"
-												src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+												src="https://assets.stickpng.com/images/585e4bf3cb11b227491c339a.png"
 												alt="User Icon"
+												width={32}
+												height={32}
 											/>
 										</button>
 									</div>
@@ -84,7 +100,7 @@ const Navbar: React.FC = () => {
 															toggleDropdown()
 														}
 													>
-														Settings
+														Account Settings
 													</div>
 												</Link>
 												<Link href="/billing" passHref>

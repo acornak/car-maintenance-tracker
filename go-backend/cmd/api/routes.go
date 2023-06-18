@@ -13,7 +13,14 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc(apiVersion+"/login", app.loginHandler)
 	mux.HandleFunc(apiVersion+"/register", app.registerHandler)
 	mux.HandleFunc(apiVersion+"/nicknames", app.nicknamesHandler)
+	mux.HandleFunc(apiVersion+"/emails", app.emailsHandler)
 	// mux.HandleFunc(apiVersion+"/update-user", app.registerHandler)
+
+	// mux.Handle(apiVersion+"/user", app.validateTokenMiddleware(http.HandlerFunc(app.getUserHandler)))
+	mux.HandleFunc(apiVersion+"/user", app.getUserHandler)
+
+	mux.HandleFunc(apiVersion+"/cars/add", app.addCarHandler)
+	mux.HandleFunc(apiVersion+"/cars/get-by-user", app.getCarsByUserHandler)
 
 	return app.enableCORS(mux)
 }

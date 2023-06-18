@@ -32,3 +32,37 @@ func GenerateRefreshToken(userId int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(mySigningKey)
 }
+
+func CheckTokenValidity(tokenString string) (bool, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return mySigningKey, nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return token.Valid, nil
+}
+
+func GetUserIdFromToken(tokenString string) (int, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return mySigningKey, nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, err
+	}
+
+	userId, err := strconv.Atoi(claims["jti"].(string))
+	if err != nil {
+		return 0, err
+	}
+
+	return userId, nil
+}

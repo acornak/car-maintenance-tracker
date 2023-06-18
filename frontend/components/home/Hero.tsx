@@ -18,10 +18,11 @@ const Hero: React.FC = () => {
 								</span>
 							</h1>
 							<p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-								With our Car Maintenance Tracker, you'll never
-								forget about your car's maintenance again. Track
-								everything in one place, get reminders, and keep
-								your vehicle running smoothly.
+								With our Car Maintenance Tracker, you&apos;ll
+								never forget about your car&apos;s maintenance
+								again. Track everything in one place, get
+								reminders, and keep your vehicle running
+								smoothly.
 							</p>
 						</div>
 					</main>

@@ -21,7 +21,7 @@ type User struct {
 	Password  string `json:"password"`
 }
 
-func (m *DBModel) Insert(user User) error {
+func (m *DBModel) InsertUser(user User) error {
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
 	if err != nil {
@@ -53,7 +53,7 @@ func (m *DBModel) Insert(user User) error {
 	return nil
 }
 
-func (m *DBModel) Authenticate(user User) (User, error) {
+func (m *DBModel) AuthenticateUser(user User) (User, error) {
 	row := m.DB.QueryRow("SELECT id, first_name, last_name, nickname, email, password FROM users WHERE email = $1", user.Email)
 	err := row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname)
 	if err != nil {
@@ -100,7 +100,31 @@ func (m *DBModel) GetAllNicknames() ([]string, error) {
 	return nicknames, nil
 }
 
-func (m *DBModel) GetByEmail(email string) (User, error) {
+func (m *DBModel) GetAllEmails() ([]string, error) {
+	rows, err := m.DB.Query("SELECT email FROM users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var emails []string
+	for rows.Next() {
+		var email string
+		err = rows.Scan(&email)
+		if err != nil {
+			return nil, err
+		}
+		emails = append(emails, email)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return emails, nil
+}
+
+func (m *DBModel) GetUserByEmail(email string) (User, error) {
 	var user User
 	stmt := `SELECT id, first_name, last_name, nickname, email, password FROM users WHERE email = $1`
 	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname, &user.Email, &user.Password)

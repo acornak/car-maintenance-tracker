@@ -1,12 +1,14 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import { User } from "@/common/types";
 
 interface AuthContextProps {
 	isAuthenticated: boolean;
 	login: (email: string, password: string) => Promise<void>;
 	logout: () => void;
 	authError: string;
+	user: User;
 }
 
 const AuthContext = createContext<AuthContextProps>({
@@ -14,6 +16,7 @@ const AuthContext = createContext<AuthContextProps>({
 	login: () => Promise.resolve(),
 	logout: () => {},
 	authError: "",
+	user: {} as User,
 });
 
 export function useAuth(): AuthContextProps {
@@ -23,20 +26,50 @@ export function useAuth(): AuthContextProps {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const [authError, setAuthError] = useState<string>("");
+	const [user, setUser] = useState<User>({} as User);
 
 	useEffect(() => {
-		const access_token = Cookies.get("access_token");
-		if (access_token) {
-			setIsAuthenticated(true);
-		} else {
-			setIsAuthenticated(false);
+		function checkAuthStatus() {
+			const auth_status = Cookies.get("auth_status");
+			setIsAuthenticated(auth_status === "true");
 		}
-	}, []);
+
+		checkAuthStatus();
+
+		// handle user here
+		if (isAuthenticated) {
+			fetch("/api/v1/user", {
+				credentials: "include",
+			})
+				.then((res) => {
+					if (res.ok) {
+						return res.json();
+					} else if (res.status === 401) {
+						throw new Error("Token expired");
+					} else {
+						throw new Error("Server error");
+					}
+				})
+				.then((data) => {
+					setUser(data.user);
+				})
+				.catch((error) => {
+					console.error(error);
+					logout();
+				});
+		}
+
+		// Listen for changes in local storage
+		window.addEventListener("storage", checkAuthStatus);
+
+		// Cleanup
+		return () => window.removeEventListener("storage", checkAuthStatus);
+	}, [isAuthenticated]);
 
 	async function login(email: string, password: string) {
 		try {
 			// Make your login request and handle the response
-			const res = await fetch("http://localhost:8000/api/v1/login", {
+			const res = await fetch("/api/v1/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ email, password }),
@@ -45,24 +78,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			if (res.ok) {
 				setIsAuthenticated(true);
 				setAuthError("");
+				Cookies.set("auth_status", "true");
+				const { user } = await res.json();
+				setUser(user);
 			} else if (res.status === 401) {
 				setAuthError("Invalid credentials. Please try again.");
+				Cookies.remove("auth_status");
 			} else {
 				setAuthError("Login failed. Please try again.");
+				Cookies.remove("auth_status");
 			}
 		} catch (error) {
 			setAuthError("Server error. Please try again later.");
+			Cookies.remove("auth_status");
 		}
 	}
 
 	function logout() {
-		Cookies.remove("access_token");
+		Cookies.remove("auth_status");
 		setIsAuthenticated(false);
 	}
 
 	return (
 		<AuthContext.Provider
-			value={{ isAuthenticated, login, logout, authError }}
+			value={{ isAuthenticated, login, logout, authError, user }}
 		>
 			{children}
 		</AuthContext.Provider>

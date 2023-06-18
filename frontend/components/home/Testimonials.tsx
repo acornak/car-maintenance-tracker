@@ -1,3 +1,4 @@
+import Image from "next/image";
 import React from "react";
 
 interface Testimonial {
@@ -38,10 +39,12 @@ const Testimonials: React.FC = () => {
 							className="p-6 bg-white rounded-lg shadow"
 						>
 							{testimonial.photoUrl && (
-								<img
+								<Image
 									src={testimonial.photoUrl}
 									alt=""
 									className="w-10 h-10 rounded-full mb-4"
+									width={40}
+									height={40}
 								/>
 							)}
 							<p className="italic text-gray-600">{`"${testimonial.quote}"`}</p>
