@@ -8,7 +8,6 @@ func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 	prefix := "/api/" + app.apiVersion
 
-	// Define your routes without any prefix
 	mux.HandleFunc(prefix+"/status", app.statusHandler)
 	mux.HandleFunc(prefix+"/login", app.loginHandler)
 	mux.HandleFunc(prefix+"/refresh-token", app.refreshTokenHandler)
@@ -17,7 +16,6 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc(prefix+"/check-email", app.checkEmailHandler)
 	// mux.HandleFunc(prefix+"/update-user", app.registerHandler)
 
-	// mux.Handle(prefix+"/user", app.validateTokenMiddleware(http.HandlerFunc(app.getUserHandler)))
 	mux.HandleFunc(prefix+"/user", app.getUserHandler)
 
 	mux.HandleFunc(prefix+"/cars/add", app.addCarHandler)

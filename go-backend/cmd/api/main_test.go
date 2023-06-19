@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"os"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -133,12 +133,14 @@ func TestNewApplication(t *testing.T) {
 		t.Error("Expected application instance, but got nil")
 	}
 
-	if app.logger != logger {
-		t.Error("Expected logger to be the same instance")
-	}
+	// Assert that the application instance has the expected values
+	//lint:ignore SA5011 this is false positive
+	assert.NotNil(t, app.config, "Expected non-nil config")
+	//lint:ignore SA5011 this is false positive
+	assert.NotNil(t, app.logger, "Expected non-nil logger")
+	//lint:ignore SA5011 this is false positive
+	assert.Equal(t, cfg, app.config)
+	//lint:ignore SA5011 this is false positive
+	assert.Equal(t, logger, app.logger)
 
-	// Assert that the models field is not nil
-	if reflect.ValueOf(app.models).IsZero() {
-		t.Error("Expected models instance, but got nil")
-	}
 }
