@@ -14,10 +14,10 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	// Get token from the cookie
 	cookie, err := r.Cookie("access_token")
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
-			sugar.Error("no cookie found")
+			app.logger.Error("no cookie found")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -29,20 +29,20 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString := cookie.Value
 	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if !isValid {
-		sugar.Error("token is not valid")
+		app.logger.Error("token is not valid")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -51,7 +51,7 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.Car
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -73,7 +73,7 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	// Insert the car into the database
 	err = app.models.DB.InsertCar(car)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -86,10 +86,10 @@ func (app *application) getCarsByUserHandler(w http.ResponseWriter, r *http.Requ
 	// Get token from the cookie
 	cookie, err := r.Cookie("access_token")
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
-			sugar.Error("no cookie found")
+			app.logger.Error("no cookie found")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -101,27 +101,27 @@ func (app *application) getCarsByUserHandler(w http.ResponseWriter, r *http.Requ
 	tokenString := cookie.Value
 	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if !isValid {
-		sugar.Error("token is not valid")
+		app.logger.Error("token is not valid")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	cars, err := app.models.DB.GetCarsByUserID(userId)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -132,7 +132,7 @@ func (app *application) getCarsByUserHandler(w http.ResponseWriter, r *http.Requ
 func (app *application) getAllCarMakersHandler(w http.ResponseWriter, r *http.Request) {
 	carMakers, err := app.models.DB.GetAllCarMakers()
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -148,7 +148,7 @@ func (app *application) getAllModelsByMakerIDHandler(w http.ResponseWriter, r *h
 	var req getModelsRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -156,7 +156,7 @@ func (app *application) getAllModelsByMakerIDHandler(w http.ResponseWriter, r *h
 	carModels, err := app.models.DB.GetModelsByMakerID(req.MakerID)
 
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -171,7 +171,7 @@ func (app *application) getMakerByIDHandler(w http.ResponseWriter, r *http.Reque
 	// Parse the id parameter as an integer
 	makerID, err := strconv.Atoi(id)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -179,7 +179,7 @@ func (app *application) getMakerByIDHandler(w http.ResponseWriter, r *http.Reque
 	carMaker, err := app.models.DB.GetMakerByID(makerID)
 
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -193,7 +193,7 @@ func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Reque
 	// Parse the id parameter as an integer
 	modelID, err := strconv.Atoi(id)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -201,7 +201,7 @@ func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Reque
 	carModel, err := app.models.DB.GetModelByID(modelID)
 
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -213,10 +213,10 @@ func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request
 	// Get token from the cookie
 	cookie, err := r.Cookie("access_token")
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
-			sugar.Error("no cookie found")
+			app.logger.Error("no cookie found")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -228,20 +228,20 @@ func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request
 	tokenString := cookie.Value
 	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if !isValid {
-		sugar.Error("token is not valid")
+		app.logger.Error("token is not valid")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -252,20 +252,20 @@ func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request
 	// Parse the id parameter as an integer
 	carId, err := strconv.Atoi(id)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
 	car, err := app.models.DB.GetCarByID(carId)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
 		return
 	}
 
 	if car.UserId != userId {
-		sugar.Error("user is not authorized to get this car")
+		app.logger.Error("user is not authorized to get this car")
 		app.writer.ErrorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
 		return
 	}

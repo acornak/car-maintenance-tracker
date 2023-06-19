@@ -25,49 +25,31 @@ type AppStatus struct {
 }
 
 type application struct {
-	config config
-	logger *zap.SugaredLogger
-	models models.Models
-	writer *writer.JsonWriter
+	config     config
+	logger     *zap.SugaredLogger
+	models     models.Models
+	writer     *writer.JsonWriter
+	apiVersion string
 }
 
 type config struct {
-	port   string
-	env    string
-	dbConn struct {
-		host     string
-		port     string
-		user     string
-		password string
-		dbname   string
-		sslmode  string
-	}
+	port          string
+	env           string
+	dbConn        dbConfig
 	allowedOrigin string
 	jwtSigningKey []byte
 }
 
-var sugar *zap.SugaredLogger
-
-func init() {
-	// Initialize the logger
-	logger, _ := zap.NewProduction()
-	defer logger.Sync() // flushes buffer, if any
-	sugar = logger.Sugar()
+type dbConfig struct {
+	host     string
+	port     string
+	user     string
+	password string
+	dbname   string
+	sslmode  string
 }
 
-func main() {
-	var cfg config
-
-	flag.StringVar(&cfg.env, "ENV", "develop", "Application environment")
-	flag.Parse()
-
-	if cfg.env == "develop" {
-		err := godotenv.Load(".envrc")
-		if err != nil {
-			sugar.Fatal("failed to load env vars:", err)
-		}
-	}
-
+func loadConfigFromEnv(cfg *config) error {
 	cfg.port = os.Getenv("PORT")
 	cfg.allowedOrigin = os.Getenv("ALLOWED_ORIGIN")
 	cfg.dbConn.host = os.Getenv("DB_HOST")
@@ -78,33 +60,79 @@ func main() {
 	cfg.dbConn.sslmode = os.Getenv("SSL_MODE")
 	cfg.jwtSigningKey = []byte(os.Getenv("JWT_SECRET"))
 
-	// Initialize the database
+	return validateConfig(cfg)
+}
+
+func initializeLogger() (*zap.SugaredLogger, error) {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return nil, err
+	}
+	defer logger.Sync() // flushes buffer, if any
+	return logger.Sugar(), nil
+}
+
+func initializeDatabase(cfg *dbConfig, logger *zap.SugaredLogger) (*sql.DB, error) {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.dbConn.host,
-		cfg.dbConn.port,
-		cfg.dbConn.user,
-		cfg.dbConn.password,
-		cfg.dbConn.dbname,
-		cfg.dbConn.sslmode,
-	)
+		cfg.host, cfg.port, cfg.user, cfg.password, cfg.dbname, cfg.sslmode)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		sugar.Fatal("failed to open a DB connection:", err)
+		return nil, err
 	}
 
 	err = db.Ping()
 	if err != nil {
-		sugar.Fatal("failed to connect to DB: ", err)
+		return nil, err
+	}
+
+	logger.Info("Successfully connected to the database")
+	return db, nil
+}
+
+func newApplication(cfg config, logger *zap.SugaredLogger, db *sql.DB) *application {
+	return &application{
+		config:     cfg,
+		logger:     logger,
+		models:     models.NewModels(db),
+		writer:     &writer.JsonWriter{},
+		apiVersion: "v1",
+	}
+}
+
+func main() {
+	var cfg config
+	flag.StringVar(&cfg.env, "ENV", "develop", "Application environment")
+	flag.Parse()
+
+	if cfg.env == "develop" {
+		err := godotenv.Load(".envrc")
+		if err != nil {
+			fmt.Println("failed to load env vars:", err)
+			os.Exit(1)
+		}
+	}
+
+	err := loadConfigFromEnv(&cfg)
+	if err != nil {
+		fmt.Println("failed to load config:", err)
+		os.Exit(1)
+	}
+
+	logger, err := initializeLogger()
+	if err != nil {
+		fmt.Println("failed to initialize logger:", err)
+		os.Exit(1)
+	}
+	defer logger.Sync()
+
+	db, err := initializeDatabase(&cfg.dbConn, logger)
+	if err != nil {
+		logger.Fatal("failed to connect to DB:", err)
 	}
 	defer db.Close()
-	sugar.Info("Successfully connected to the database")
 
-	app := &application{
-		config: cfg,
-		logger: sugar,
-		models: models.NewModels(db),
-	}
+	app := newApplication(cfg, logger, db)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.port),
@@ -115,9 +143,7 @@ func main() {
 	}
 
 	err = srv.ListenAndServe()
-
-	// Log the error, if any
 	if err != nil {
-		sugar.Fatal("Failed to start the server: ", err)
+		logger.Fatal("Failed to start the server:", err)
 	}
 }

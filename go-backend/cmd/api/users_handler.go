@@ -22,7 +22,7 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -30,7 +30,7 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if email is valid
 	_, err = mail.ParseAddress(req.Email)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -90,10 +90,10 @@ func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Reque
 	// Get token from the cookie
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
-			sugar.Error("no cookie found")
+			app.logger.Error("no cookie found")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -105,20 +105,20 @@ func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Reque
 	tokenString := cookie.Value
 	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if !isValid {
-		sugar.Error("token is not valid")
+		app.logger.Error("token is not valid")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -140,7 +140,7 @@ func (app *application) refreshTokenHandler(w http.ResponseWriter, r *http.Reque
 	http.SetCookie(w, &accessCookie)
 
 	app.writer.WriteJson(w, http.StatusOK, nil, "")
-	sugar.Info("successfully refreshed token")
+	app.logger.Info("successfully refreshed token")
 }
 
 func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	var req registerRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -163,7 +163,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	// Check if email is valid
 	_, err = mail.ParseAddress(req.Email)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -171,7 +171,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	// Check if password is valid
 	if !isPasswordValid(req.Password) {
 		err = errors.New("password does not meet the requirements")
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -179,14 +179,14 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	// Check if email is unique
 	exists, err := app.models.DB.CheckEmailExists(req.Email)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if exists {
 		err = errors.New("a user with the email address '" + req.Email + "' already exists")
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -194,14 +194,14 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	// Check if nickname is unique
 	exists, err = app.models.DB.CheckNicknameExists(req.Nickname)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if exists {
 		err = errors.New("a user with the nickname '" + req.Nickname + "' already exists")
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -217,13 +217,13 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	// Call the Insert method on the models, passing in the user
 	err = app.models.DB.InsertUser(user)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	app.writer.WriteJson(w, http.StatusCreated, nil, "")
-	sugar.Info("successfully registered user: ", user.Email)
+	app.logger.Info("successfully registered user: ", user.Email)
 }
 
 func (app *application) checkNicknameHandler(w http.ResponseWriter, r *http.Request) {
@@ -233,21 +233,21 @@ func (app *application) checkNicknameHandler(w http.ResponseWriter, r *http.Requ
 	var req checkNicknameRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
 	exists, err := app.models.DB.CheckNicknameExists(req.Nickname)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if exists {
 		app.writer.WriteJson(w, http.StatusOK, nil, "")
-		sugar.Info("nickname already exists: ", req.Nickname)
+		app.logger.Info("nickname already exists: ", req.Nickname)
 	} else {
 		app.writer.WriteJson(w, http.StatusNotFound, nil, "")
 	}
@@ -261,21 +261,21 @@ func (app *application) checkEmailHandler(w http.ResponseWriter, r *http.Request
 	var req checkEmailRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
 	exists, err := app.models.DB.CheckEmailExists(req.Email)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if exists {
 		app.writer.WriteJson(w, http.StatusOK, nil, "")
-		sugar.Info("email already exists: ", req.Email)
+		app.logger.Info("email already exists: ", req.Email)
 	} else {
 		app.writer.WriteJson(w, http.StatusNotFound, nil, "")
 	}
@@ -285,10 +285,10 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	// Get token from the cookie
 	cookie, err := r.Cookie("access_token")
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
-			sugar.Error("no cookie found")
+			app.logger.Error("no cookie found")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -300,20 +300,20 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString := cookie.Value
 	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	if !isValid {
-		sugar.Error("token is not valid")
+		app.logger.Error("token is not valid")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -321,7 +321,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	// Proceed with the getUserByID logic as the token is now validated
 	user, err := app.models.DB.GetUserByID(userId)
 	if err != nil {
-		sugar.Error(err)
+		app.logger.Error(err)
 		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
