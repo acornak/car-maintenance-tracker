@@ -1,16 +1,13 @@
 package token
 
 import (
-	"os"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var mySigningKey = []byte(os.Getenv("JWT_SECRET"))
-
-func GenerateAccessToken(userId int) (string, error) {
+func GenerateAccessToken(userId int, signingKey []byte) (string, error) {
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 		ID:        strconv.Itoa(userId),
@@ -18,10 +15,10 @@ func GenerateAccessToken(userId int) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(mySigningKey)
+	return token.SignedString(signingKey)
 }
 
-func GenerateRefreshToken(userId int) (string, error) {
+func GenerateRefreshToken(userId int, signingKey []byte) (string, error) {
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 60 * 24 * 7)),
 		ID:        strconv.Itoa(userId),
@@ -30,12 +27,12 @@ func GenerateRefreshToken(userId int) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(mySigningKey)
+	return token.SignedString(signingKey)
 }
 
-func CheckTokenValidity(tokenString string) (bool, error) {
+func CheckTokenValidity(tokenString string, signingKey []byte) (bool, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return mySigningKey, nil
+		return signingKey, nil
 	})
 
 	if err != nil {
@@ -45,9 +42,9 @@ func CheckTokenValidity(tokenString string) (bool, error) {
 	return token.Valid, nil
 }
 
-func GetUserIdFromToken(tokenString string) (int, error) {
+func GetUserIdFromToken(tokenString string, signingKey []byte) (int, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return mySigningKey, nil
+		return signingKey, nil
 	})
 
 	if err != nil {

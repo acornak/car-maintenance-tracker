@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/acornak/car-maintenance-tracker/models"
+	"github.com/acornak/car-maintenance-tracker/writer"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
@@ -27,6 +28,7 @@ type application struct {
 	config config
 	logger *zap.SugaredLogger
 	models models.Models
+	writer *writer.JsonWriter
 }
 
 type config struct {
@@ -41,6 +43,7 @@ type config struct {
 		sslmode  string
 	}
 	allowedOrigin string
+	jwtSigningKey []byte
 }
 
 var sugar *zap.SugaredLogger
@@ -73,6 +76,7 @@ func main() {
 	cfg.dbConn.password = os.Getenv("DB_PASS")
 	cfg.dbConn.dbname = os.Getenv("DB_NAME")
 	cfg.dbConn.sslmode = os.Getenv("SSL_MODE")
+	cfg.jwtSigningKey = []byte(os.Getenv("JWT_SECRET"))
 
 	// Initialize the database
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",

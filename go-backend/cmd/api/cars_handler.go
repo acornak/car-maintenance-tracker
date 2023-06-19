@@ -27,10 +27,10 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokenString := cookie.Value
-	isValid, err := token.CheckTokenValidity(tokenString)
+	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -40,10 +40,10 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := token.GetUserIdFromToken(tokenString)
+	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (app *application) addCarHandler(w http.ResponseWriter, r *http.Request) {
 	err = app.models.DB.InsertCar(car)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -99,10 +99,10 @@ func (app *application) getCarsByUserHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	tokenString := cookie.Value
-	isValid, err := token.CheckTokenValidity(tokenString)
+	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -112,32 +112,32 @@ func (app *application) getCarsByUserHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	userId, err := token.GetUserIdFromToken(tokenString)
+	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	cars, err := app.models.DB.GetCarsByUserID(userId)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	app.writeJson(w, http.StatusOK, cars, "cars")
+	app.writer.WriteJson(w, http.StatusOK, cars, "cars")
 }
 
 func (app *application) getAllCarMakersHandler(w http.ResponseWriter, r *http.Request) {
 	carMakers, err := app.models.DB.GetAllCarMakers()
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	app.writeJson(w, http.StatusOK, carMakers, "makers")
+	app.writer.WriteJson(w, http.StatusOK, carMakers, "makers")
 }
 
 func (app *application) getAllModelsByMakerIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +149,7 @@ func (app *application) getAllModelsByMakerIDHandler(w http.ResponseWriter, r *h
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -157,11 +157,11 @@ func (app *application) getAllModelsByMakerIDHandler(w http.ResponseWriter, r *h
 
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	app.writeJson(w, http.StatusOK, carModels, "models")
+	app.writer.WriteJson(w, http.StatusOK, carModels, "models")
 }
 
 func (app *application) getMakerByIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +172,7 @@ func (app *application) getMakerByIDHandler(w http.ResponseWriter, r *http.Reque
 	makerID, err := strconv.Atoi(id)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -180,11 +180,11 @@ func (app *application) getMakerByIDHandler(w http.ResponseWriter, r *http.Reque
 
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	app.writeJson(w, http.StatusOK, carMaker, "maker")
+	app.writer.WriteJson(w, http.StatusOK, carMaker, "maker")
 }
 
 func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +194,7 @@ func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Reque
 	modelID, err := strconv.Atoi(id)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -202,11 +202,11 @@ func (app *application) getModelByIDHandler(w http.ResponseWriter, r *http.Reque
 
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	app.writeJson(w, http.StatusOK, carModel, "model")
+	app.writer.WriteJson(w, http.StatusOK, carModel, "model")
 }
 
 func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -226,10 +226,10 @@ func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	tokenString := cookie.Value
-	isValid, err := token.CheckTokenValidity(tokenString)
+	isValid, err := token.CheckTokenValidity(tokenString, app.config.jwtSigningKey)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -239,10 +239,10 @@ func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	userId, err := token.GetUserIdFromToken(tokenString)
+	userId, err := token.GetUserIdFromToken(tokenString, app.config.jwtSigningKey)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusInternalServerError)
+		app.writer.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -253,22 +253,22 @@ func (app *application) getCarByIDHandler(w http.ResponseWriter, r *http.Request
 	carId, err := strconv.Atoi(id)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, err, http.StatusBadRequest)
+		app.writer.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
 
 	car, err := app.models.DB.GetCarByID(carId)
 	if err != nil {
 		sugar.Error(err)
-		app.errorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
+		app.writer.ErrorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
 		return
 	}
 
 	if car.UserId != userId {
 		sugar.Error("user is not authorized to get this car")
-		app.errorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
+		app.writer.ErrorJson(w, errors.New("user is not authorized to get this car"), http.StatusUnauthorized)
 		return
 	}
 
-	app.writeJson(w, http.StatusOK, car, "car")
+	app.writer.WriteJson(w, http.StatusOK, car, "car")
 }
