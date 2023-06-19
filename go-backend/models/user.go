@@ -53,29 +53,6 @@ func (m *DBModel) InsertUser(user User) error {
 	return nil
 }
 
-func (m *DBModel) AuthenticateUser(user User) (User, error) {
-	row := m.DB.QueryRow("SELECT id, first_name, last_name, nickname, email, password FROM users WHERE email = $1", user.Email)
-	err := row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return User{}, errors.New("models: no matching record found")
-		} else {
-			return User{}, err
-		}
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
-	if err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return User{}, errors.New("models: invalid credentials")
-		} else {
-			return User{}, err
-		}
-	}
-
-	return user, nil
-}
-
 func (m *DBModel) CheckNicknameExists(nickname string) (bool, error) {
 	var exists bool
 	stmt := `SELECT exists (SELECT 1 FROM users WHERE nickname=$1)`
