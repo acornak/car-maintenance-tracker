@@ -16,6 +16,9 @@ RUN go mod download
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
+# Run tests
+RUN go test -race ./...
+
 # Build the Go app
 RUN CGO_ENABLED=0 go build -o main ./cmd/api/
 

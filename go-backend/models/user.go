@@ -53,75 +53,24 @@ func (m *DBModel) InsertUser(user User) error {
 	return nil
 }
 
-func (m *DBModel) AuthenticateUser(user User) (User, error) {
-	row := m.DB.QueryRow("SELECT id, first_name, last_name, nickname, email, password FROM users WHERE email = $1", user.Email)
-	err := row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname)
+func (m *DBModel) CheckNicknameExists(nickname string) (bool, error) {
+	var exists bool
+	stmt := `SELECT exists (SELECT 1 FROM users WHERE nickname=$1)`
+	err := m.DB.QueryRow(stmt, nickname).Scan(&exists)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return User{}, errors.New("models: no matching record found")
-		} else {
-			return User{}, err
-		}
+		return false, err
 	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
-	if err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return User{}, errors.New("models: invalid credentials")
-		} else {
-			return User{}, err
-		}
-	}
-
-	return user, nil
+	return exists, nil
 }
 
-func (m *DBModel) GetAllNicknames() ([]string, error) {
-	rows, err := m.DB.Query("SELECT nickname FROM users")
+func (m *DBModel) CheckEmailExists(email string) (bool, error) {
+	var exists bool
+	stmt := `SELECT exists (SELECT 1 FROM users WHERE email=$1)`
+	err := m.DB.QueryRow(stmt, email).Scan(&exists)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	defer rows.Close()
-
-	var nicknames []string
-	for rows.Next() {
-		var nickname string
-		err = rows.Scan(&nickname)
-		if err != nil {
-			return nil, err
-		}
-		nicknames = append(nicknames, nickname)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return nicknames, nil
-}
-
-func (m *DBModel) GetAllEmails() ([]string, error) {
-	rows, err := m.DB.Query("SELECT email FROM users")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var emails []string
-	for rows.Next() {
-		var email string
-		err = rows.Scan(&email)
-		if err != nil {
-			return nil, err
-		}
-		emails = append(emails, email)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return emails, nil
+	return exists, nil
 }
 
 func (m *DBModel) GetUserByEmail(email string) (User, error) {

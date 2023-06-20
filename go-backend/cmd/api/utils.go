@@ -1,46 +1,9 @@
 package main
 
 import (
-	"encoding/json"
-	"net/http"
+	"errors"
 	"regexp"
 )
-
-func (app *application) writeJson(w http.ResponseWriter, status int, data interface{}, wrap string) error {
-	if wrap != "" {
-		wrapper := make(map[string]interface{})
-		wrapper[wrap] = data
-		data = wrapper
-	}
-
-	js, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	w.Write(js)
-
-	return nil
-}
-
-func (app *application) errorJson(w http.ResponseWriter, err error, status ...int) {
-	statusCode := http.StatusBadRequest
-	if len(status) > 0 {
-		statusCode = status[0]
-	}
-
-	type jsonError struct {
-		Message string `json:"message"`
-	}
-
-	errMessage := jsonError{
-		Message: err.Error(),
-	}
-
-	app.writeJson(w, statusCode, errMessage, "error")
-}
 
 // Checks if a password is valid according to the given rules
 func isPasswordValid(password string) bool {
@@ -70,4 +33,44 @@ func isPasswordValid(password string) bool {
 	}
 
 	return true
+}
+
+func validateConfig(cfg *config) error {
+	if cfg.port == "" {
+		return errors.New("missing port configuration")
+	}
+
+	if cfg.allowedOrigin == "" {
+		return errors.New("missing allowedOrigin configuration")
+	}
+
+	if cfg.dbConn.port == "" {
+		return errors.New("missing DB_PORT configuration")
+	}
+
+	if cfg.dbConn.host == "" {
+		return errors.New("missing DB_HOST configuration")
+	}
+
+	if cfg.dbConn.user == "" {
+		return errors.New("missing DB_USER configuration")
+	}
+
+	if cfg.dbConn.password == "" {
+		return errors.New("missing DB_PASS configuration")
+	}
+
+	if cfg.dbConn.dbname == "" {
+		return errors.New("missing DB_NAME configuration")
+	}
+
+	if cfg.dbConn.sslmode == "" {
+		return errors.New("missing SSL_MODE configuration")
+	}
+
+	if len(cfg.jwtSigningKey) == 0 {
+		return errors.New("missing JWT_SECRET configuration")
+	}
+
+	return nil
 }

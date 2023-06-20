@@ -9,22 +9,32 @@ import { emailRegex } from "@/common/const";
 import { validateField } from "@/common/functions";
 import { useAuth } from "@/context/AuthContext";
 
-async function existingNicknames(): Promise<[string]> {
-	const res = await fetch("/api/v1/nicknames", {
-		method: "GET",
+async function checkNickname(nickname: string): Promise<boolean> {
+	return await fetch(`/api/v1/check-nickname`, {
+		method: "POST",
 		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ nickname: nickname }),
+	}).then((res) => {
+		if (res.status === 404) {
+			return false;
+		} else {
+			return true;
+		}
 	});
-	const data: any = await res.json();
-	return data.nicknames;
 }
 
-async function existingEmails(): Promise<[string]> {
-	const res = await fetch("/api/v1/emails", {
-		method: "GET",
+async function checkEmail(email: string): Promise<boolean> {
+	return await fetch(`/api/v1/check-email`, {
+		method: "POST",
 		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ email: email }),
+	}).then((res) => {
+		if (res.status === 404) {
+			return false;
+		} else {
+			return true;
+		}
 	});
-	const data: any = await res.json();
-	return data.emails;
 }
 
 async function registerUser(
@@ -34,7 +44,6 @@ async function registerUser(
 	email: string,
 	password: string,
 ) {
-	// TODO: add env vars
 	const res = await fetch("/api/v1/register", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -46,8 +55,15 @@ async function registerUser(
 			password: password,
 		}),
 	});
+
+	// Always return the JSON response whether it's successful or not
 	const data = await res.json();
-	return data;
+
+	if (!res.ok) {
+		throw new Error(data.message || "Unknown error");
+	}
+
+	return data; // Ensure something is returned
 }
 
 const RegisterPage: React.FC = () => {
@@ -75,8 +91,11 @@ const RegisterPage: React.FC = () => {
 		number: false,
 		specialCharacter: false,
 	});
-
+	const [showPassword, setShowPassword] = useState<boolean>(false);
 	const [isFormValid, setIsFormValid] = useState<boolean>(false);
+	const [successfulRegister, setSuccessfulRegister] = useState<
+		boolean | null
+	>(null);
 
 	const passwordRegex =
 		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_\-+=?/\\|~`:;"';]).{8,}$/;
@@ -84,10 +103,8 @@ const RegisterPage: React.FC = () => {
 	const validateEmail = async (email: string) => {
 		setEmailError(!validateField(email, emailRegex));
 
-		const existingEmailsList = await existingEmails();
-		if (existingEmailsList.includes(email)) {
+		if (await checkEmail(email)) {
 			setEmailExistsError(true);
-			return;
 		} else {
 			setEmailExistsError(false);
 		}
@@ -101,10 +118,7 @@ const RegisterPage: React.FC = () => {
 		setPasswordConfirmError(value !== password);
 
 	const validateNickname = async (nickname: string) => {
-		const nicknames: string[] = await existingNicknames();
-		if (nicknames.length === 0) return;
-
-		if (nicknames.includes(nickname)) {
+		if (await checkNickname(nickname)) {
 			setNicknameError(true);
 		} else {
 			setNicknameError(false);
@@ -176,9 +190,22 @@ const RegisterPage: React.FC = () => {
 		event.preventDefault();
 		if (!isFormValid) return;
 
-		await registerUser(firstName, lastName, nickname, email, password);
+		try {
+			// assuming registerUser returns a promise that resolves with a success status
+			const response = await registerUser(
+				firstName,
+				lastName,
+				nickname,
+				email,
+				password,
+			);
 
-		router.push("/login");
+			setSuccessfulRegister(true);
+		} catch (error) {
+			setSuccessfulRegister(false);
+			console.error(error);
+			// handle error as needed, possibly setting an error state here
+		}
 	};
 
 	useEffect(() => {
@@ -225,6 +252,14 @@ const RegisterPage: React.FC = () => {
 		passwordConfirmError,
 		passwordRegex,
 	]);
+
+	if (successfulRegister) {
+		return <SuccessfulRegisterPage />;
+	}
+
+	if (successfulRegister === false) {
+		return <UnsuccessfulRegisterPage />;
+	}
 
 	return (
 		<div className="flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
@@ -299,7 +334,7 @@ const RegisterPage: React.FC = () => {
 						)}
 						<Input
 							id="password"
-							type="password"
+							type={showPassword ? "text" : "password"}
 							placeholder="Password"
 							value={password}
 							onChange={(event) => handleChange(event)}
@@ -368,7 +403,7 @@ const RegisterPage: React.FC = () => {
 						</ul>
 						<Input
 							id="confirm-password"
-							type="password"
+							type={showPassword ? "text" : "password"}
 							placeholder="Confirm Password"
 							value={confirmPassword}
 							onChange={(event) => handleChange(event)}
@@ -379,6 +414,20 @@ const RegisterPage: React.FC = () => {
 								Passwords do not match.
 							</div>
 						)}
+						<div className="flex items-center">
+							<input
+								type="checkbox"
+								id="show-password"
+								checked={showPassword}
+								onChange={() => setShowPassword(!showPassword)}
+							/>
+							<label
+								className="text-sm font-medium text-gray-700 pl-2"
+								htmlFor="show-password"
+							>
+								Show passwords
+							</label>
+						</div>
 					</div>
 					<div>
 						<button
@@ -394,6 +443,125 @@ const RegisterPage: React.FC = () => {
 						</button>
 					</div>
 				</form>
+			</div>
+		</div>
+	);
+};
+
+const SuccessfulRegisterPage = () => {
+	const router = useRouter();
+
+	const redirectToLogin = () => {
+		router.push("/login");
+	};
+
+	return (
+		<div className="h-screen flex items-center justify-center bg-green-100">
+			<div className="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden mx-3">
+				<div className="md:flex">
+					<div className="md:flex-shrink-0 flex items-center justify-center pt-4 pb-0">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 50 50"
+							fill={"#25AE88"}
+							width={100}
+							height={100}
+						>
+							<circle cx="25" cy="25" r="25" fill={"#25AE88"} />
+							<polyline
+								style={{
+									fill: "none",
+									stroke: "#FFFFFF",
+									strokeWidth: "3.6",
+									strokeLinecap: "round",
+									strokeLinejoin: "round",
+									strokeMiterlimit: "10",
+								}}
+								points="38,15 22,33 12,25"
+							/>
+						</svg>
+					</div>
+					<div className="p-8">
+						<div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
+							Congratulations!
+						</div>
+						<p className="mt-2 text-gray-600">
+							You have successfully registered for an account. You
+							can now proceed to login to access your account.
+						</p>
+						<button
+							className="mt-4 bg-indigo-500 text-white px-6 py-2 rounded font-medium hover:bg-indigo-600"
+							onClick={redirectToLogin}
+						>
+							Go to Login
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+const UnsuccessfulRegisterPage = () => {
+	const router = useRouter();
+
+	const redirectToRegister = () => {
+		router.push("/register");
+	};
+
+	return (
+		<div className="h-screen flex items-center justify-center bg-red-100">
+			<div className="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden mx-3">
+				<div className="md:flex">
+					<div className="md:flex-shrink-0 flex items-center justify-center pt-4 pb-0">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 64 64"
+							width={100}
+							height={100}
+						>
+							<defs>
+								<linearGradient
+									y2="161.29"
+									x2="0"
+									y1="218.22"
+									gradientUnits="userSpaceOnUse"
+									id="0"
+								>
+									<stop stop-color="#c52828" />
+									<stop offset="1" stop-color="#ff5454" />
+								</linearGradient>
+							</defs>
+							<g transform="matrix(.92857 0 0 .92857-666.94-144.37)">
+								<circle
+									r="28"
+									cy="189.93"
+									cx="752.7"
+									fill="url(#0)"
+								/>
+								<g fill="#fff" fill-opacity=".851">
+									<path d="m739.54 180.23c0-2.166 1.756-3.922 3.922-3.922 2.165 0 3.922 1.756 3.922 3.922 0 2.167-1.756 3.923-3.922 3.923-2.166 0-3.922-1.756-3.922-3.923m17.784 0c0-2.166 1.758-3.922 3.923-3.922 2.165 0 3.922 1.756 3.922 3.922 0 2.167-1.756 3.923-3.922 3.923-2.166 0-3.923-1.756-3.923-3.923" />
+									<path d="m766.89 200.51c-2.431-5.621-8.123-9.253-14.502-9.253-6.516 0-12.242 3.65-14.588 9.3-.402.967.056 2.078 1.025 2.48.238.097.485.144.727.144.744 0 1.45-.44 1.753-1.17 1.756-4.229 6.107-6.96 11.08-6.96 4.864 0 9.189 2.733 11.02 6.965.416.962 1.533 1.405 2.495.989.961-.417 1.405-1.533.989-2.495" />
+								</g>
+							</g>
+						</svg>
+					</div>
+					<div className="p-8">
+						<div className="uppercase tracking-wide text-sm text-red-500 font-semibold">
+							Registration Failed
+						</div>
+						<p className="mt-2 text-gray-600">
+							Unfortunately, we were unable to create your
+							account. Please try registering again.
+						</p>
+						<button
+							className="mt-4 bg-red-500 text-white px-6 py-2 rounded font-medium hover:bg-red-600"
+							onClick={redirectToRegister}
+						>
+							Try Again
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
