@@ -2,115 +2,126 @@ import { Car, CarMaker, CarModel } from "./types";
 
 const validateField = (value: string, regex: RegExp) => regex.test(value);
 
-async function getMakerByID(id: number): Promise<string> {
-	const res = await fetch(`/api/v1/cars/maker?id=${id}`, {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
+async function fetchJSON(
+	url: string,
+	options?: RequestInit,
+	fetcher = fetch,
+): Promise<any> {
+	const res: Response = await fetcher(url, options);
+	const data: any = await res.json();
 
 	if (!res.ok) {
-		return "";
+		throw new Error(data.message);
 	}
 
-	const data = await res.json();
+	return data;
+}
+
+async function getMakerByID(id: number, fetcher = fetch): Promise<string> {
+	const data = await fetchJSON(
+		`/api/v1/cars/maker?id=${id}`,
+		{
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		},
+		fetcher,
+	);
+
 	return data.maker.name;
 }
 
-async function getModelByID(id: number): Promise<string> {
-	const res = await fetch(`/api/v1/cars/model?id=${id}`, {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
+async function getModelByID(id: number, fetcher = fetch): Promise<string> {
+	const data = await fetchJSON(
+		`/api/v1/cars/model?id=${id}`,
+		{
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
 		},
-	});
+		fetcher,
+	);
 
-	if (!res.ok) {
-		return "";
-	}
-
-	const data = await res.json();
 	return data.model.name;
 }
 
-async function getAllCars(): Promise<Car[]> {
-	const res = await fetch("/api/v1/cars/get-by-user", {
-		credentials: "include",
-	});
-	const data = await res.json();
+async function getAllCars(fetcher = fetch): Promise<Car[]> {
+	const data = await fetchJSON(
+		"/api/v1/cars/get-by-user",
+		{
+			credentials: "include",
+		},
+		fetcher,
+	);
 
-	if (!res.ok) {
-		throw new Error(data.message);
-	}
+	return Promise.all(
+		data.cars.map(async (car: Car) => {
+			if (!car.brand_id || !car.model_id) {
+				throw new Error("Invalid car data");
+			}
 
-	// for each car in cars, fetch data about model and brand by id:
-	for (let i = 0; i < data.cars.length; i++) {
-		const car = data.cars[i];
-		const brand = await getMakerByID(car.brand_id);
-		const model = await getModelByID(car.model_id);
-		car.brand_name = brand;
-		car.model_name = model;
-	}
+			const brand: string = await getMakerByID(car.brand_id, fetcher);
+			const model: string = await getModelByID(car.model_id, fetcher);
 
-	return data.cars;
+			return { ...car, brand_name: brand, model_name: model };
+		}),
+	);
 }
 
-async function getCarByID(id: number): Promise<Car> {
-	const res = await fetch(`/api/v1/cars/get?id=${id}`, {
-		credentials: "include",
-	});
-	const data = await res.json();
+async function getCarByID(id: number, fetcher = fetch): Promise<Car> {
+	const data = await fetchJSON(
+		`/api/v1/cars/get?id=${id}`,
+		{
+			credentials: "include",
+		},
+		fetcher,
+	);
 
-	console.log(res.status);
-
-	// Check if response status is 401 unauthorized
-	if (res.status === 401) {
+	if (data.status === 401) {
 		throw new Error("Unauthorized");
 	}
 
-	if (!res.ok) {
-		throw new Error(data.message);
+	const car: Car = data.car;
+
+	if (!car.brand_id || !car.model_id) {
+		throw new Error("Invalid car data");
 	}
 
-	const car = data.car;
-	const brand = await getMakerByID(car.brand_id);
-	const model = await getModelByID(car.model_id);
-	car.brand_name = brand;
-	car.model_name = model;
+	const brand: string = await getMakerByID(car.brand_id, fetcher);
+	const model: string = await getModelByID(car.model_id, fetcher);
 
-	return car;
+	return { ...car, brand_name: brand, model_name: model };
 }
 
-async function getAllCarMakers(): Promise<CarMaker[]> {
-	const res = await fetch("/api/v1/cars/makers");
-	const data = await res.json();
-
-	if (!res.ok) {
-		throw new Error(data.message);
-	}
+async function getAllCarMakers(fetcher = fetch): Promise<CarMaker[]> {
+	const data = await fetchJSON("/api/v1/cars/makers", {}, fetcher);
 
 	return data.makers;
 }
 
-async function getAllModelsByMakerID(makerID: number): Promise<CarModel[]> {
-	const res = await fetch(`/api/v1/cars/models`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
+async function getAllModelsByMakerID(
+	makerID: number,
+	fetcher = fetch,
+): Promise<CarModel[]> {
+	const data = await fetchJSON(
+		`/api/v1/cars/models`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ maker_id: makerID }),
 		},
-		body: JSON.stringify({ maker_id: makerID }),
-	});
-	const data = await res.json();
-
-	if (!res.ok) {
-		throw new Error(data.message);
-	}
+		fetcher,
+	);
 
 	return data.models;
 }
 
 export {
+	fetchJSON,
 	validateField,
 	getAllCars,
 	getMakerByID,
