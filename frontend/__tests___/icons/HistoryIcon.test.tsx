@@ -1,7 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import "@testing-library/jest-dom/extend-expect";
-import HistoryIcon from "../../icons/HistoryIcon";
+import HistoryIcon from "@/icons/HistoryIcon";
 
 describe("TrackingIcon Component", () => {
 	it("should render without throwing an error", () => {

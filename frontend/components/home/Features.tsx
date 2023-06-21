@@ -1,10 +1,46 @@
 import React from "react";
-import ReminderIcon from "@/icons/ReminderIcon";
-import TrackingIcon from "@/icons/TrackingIcon";
 import CostIcon from "@/icons/CostIcon";
 import HistoryIcon from "@/icons/HistoryIcon";
+import ReminderIcon from "@/icons/ReminderIcon";
+import TrackingIcon from "@/icons/TrackingIcon";
 
-const features = [
+const FeatureItem: React.FC<{
+	title: string;
+	description: string;
+	IconComponent: React.ElementType;
+}> = ({ title, description, IconComponent }) => {
+	return (
+		<div className="pt-6">
+			<div className="flow-root bg-gray-50 rounded-lg px-6 pb-8">
+				<div className="flex flex-col items-center">
+					<div
+						className="mt-3 flex items-center justify-center h-12 w-12 rounded-md text-white"
+						role="img"
+					>
+						<IconComponent />
+					</div>
+					<h3 className="mt-2 text-lg leading-6 font-medium text-gray-900">
+						{title}
+					</h3>
+					<p
+						className="mt-2 text-base leading-6 text-gray-500"
+						role="paragraph"
+					>
+						{description}
+					</p>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+type FeatureProps = {
+	title: string;
+	description: string;
+	IconComponent: React.ElementType;
+};
+
+const features: FeatureProps[] = [
 	{
 		title: "Maintenance Reminders",
 		description: "Never forget a service date with automatic reminders.",
@@ -48,22 +84,13 @@ const Features: React.FC = () => {
 				</div>
 				<div className="mt-10">
 					<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-						{features.map((feature, idx) => (
-							<div key={idx} className="pt-6">
-								<div className="flow-root bg-gray-50 rounded-lg px-6 pb-8">
-									<div className="flex flex-col items-center">
-										<div className="mt-3 flex items-center justify-center h-12 w-12 rounded-md text-white">
-											<feature.IconComponent />
-										</div>
-										<h3 className="mt-2 text-lg leading-6 font-medium text-gray-900">
-											{feature.title}
-										</h3>
-										<p className="mt-2 text-base leading-6 text-gray-500">
-											{feature.description}
-										</p>
-									</div>
-								</div>
-							</div>
+						{features.map((feature: FeatureProps, idx: number) => (
+							<FeatureItem
+								key={idx}
+								title={feature.title}
+								description={feature.description}
+								IconComponent={feature.IconComponent}
+							/>
 						))}
 					</div>
 				</div>

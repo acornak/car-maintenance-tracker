@@ -1,13 +1,13 @@
 import Image from "next/image";
 import React from "react";
 
-interface Testimonial {
+type TestimonialItem = {
 	quote: string;
 	author: string;
 	photoUrl?: string;
-}
+};
 
-const testimonials: Testimonial[] = [
+const testimonials: TestimonialItem[] = [
 	{
 		quote: "This app has made maintaining my car so much easier! Highly recommend.",
 		author: "John Doe",
@@ -15,15 +15,40 @@ const testimonials: Testimonial[] = [
 	},
 	{
 		quote: "This app has made maintaining my car so much easier! Highly recommend.",
-		author: "John Doe",
+		author: "Jane Doe",
 		photoUrl: "/mechanic.jpg",
 	},
 	{
 		quote: "This app has made maintaining my car so much easier! Highly recommend.",
-		author: "John Doe",
+		author: "Jim Doe",
 		photoUrl: "/mechanic.jpg",
 	},
 ];
+
+const Testimonial: React.FC<{ testimonial: TestimonialItem }> = ({
+	testimonial,
+}) => {
+	return (
+		<div
+			key={testimonial.author}
+			className="p-6 bg-white rounded-lg shadow"
+		>
+			{testimonial.photoUrl && (
+				<Image
+					src={testimonial.photoUrl}
+					alt=""
+					className="w-10 h-10 rounded-full mb-4"
+					width={40}
+					height={40}
+				/>
+			)}
+			<p className="italic text-gray-600">{`"${testimonial.quote}"`}</p>
+			<p className="mt-2 font-semibold text-gray-900">
+				{testimonial.author}
+			</p>
+		</div>
+	);
+};
 
 const Testimonials: React.FC = () => {
 	return (
@@ -33,25 +58,11 @@ const Testimonials: React.FC = () => {
 					What Our Users Are Saying
 				</h2>
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-					{testimonials.map((testimonial, idx) => (
-						<div
-							key={idx}
-							className="p-6 bg-white rounded-lg shadow"
-						>
-							{testimonial.photoUrl && (
-								<Image
-									src={testimonial.photoUrl}
-									alt=""
-									className="w-10 h-10 rounded-full mb-4"
-									width={40}
-									height={40}
-								/>
-							)}
-							<p className="italic text-gray-600">{`"${testimonial.quote}"`}</p>
-							<p className="mt-2 font-semibold text-gray-900">
-								{testimonial.author}
-							</p>
-						</div>
+					{testimonials.map((testimonial) => (
+						<Testimonial
+							key={testimonial.author}
+							testimonial={testimonial}
+						/>
 					))}
 				</div>
 			</div>

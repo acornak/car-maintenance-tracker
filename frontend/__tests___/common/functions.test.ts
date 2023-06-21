@@ -8,7 +8,7 @@ import {
 	getMakerByID,
 	getModelByID,
 	validateField,
-} from "../../common/functions";
+} from "@/common/functions";
 
 describe("validateField", () => {
 	it("returns true when the value matches the regex", () => {
