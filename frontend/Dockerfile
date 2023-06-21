@@ -11,10 +11,13 @@ COPY package.json ./
 COPY yarn.lock ./
 
 # Install all dependencies. Dependencies will be cached if the package files are not changed
-RUN yarn
+RUN yarn install
 
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
+
+# Run tests
+RUN yarn test
 
 # Build the React app
 RUN yarn build

@@ -1,12 +1,15 @@
-import { BellIcon } from "@heroicons/react/24/solid";
 import React from "react";
+import { BellIcon } from "@heroicons/react/24/solid";
 
-const ReminderIcon: React.FC = () => {
+function ReminderIcon(): JSX.Element {
 	return (
 		<div className="w-12 h-12">
-			<BellIcon className="h-full w-full text-indigo-600" />
+			<BellIcon
+				className="h-full w-full text-indigo-600"
+				data-testid="reminder-icon"
+			/>
 		</div>
 	);
-};
+}
 
 export default ReminderIcon;

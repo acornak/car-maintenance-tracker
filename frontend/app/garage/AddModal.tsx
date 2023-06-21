@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Car, CarMaker, CarModel } from "@/common/types";
 import { Input, Select } from "@/components/Input";
+import { getAllCarMakers, getAllModelsByMakerID } from "@/common/functions";
 
 const styles = {
 	modal: {
@@ -31,80 +32,60 @@ type AddCarModalProps = {
 	setCar: (car: Car) => void;
 };
 
-async function getAllCarMakers(): Promise<CarMaker[]> {
-	const res = await fetch("/api/v1/cars/makers");
-	const data = await res.json();
-
-	if (!res.ok) {
-		throw new Error(data.message);
-	}
-
-	return data.makers;
-}
-
-async function getAllModelsByMakerID(makerID: number): Promise<CarModel[]> {
-	const res = await fetch(`/api/v1/cars/models`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({ maker_id: makerID }),
-	});
-	const data = await res.json();
-
-	if (!res.ok) {
-		throw new Error(data.message);
-	}
-
-	return data.models;
-}
-
 export default function AddCarModal({
 	onClose,
 	onSubmit,
 	car,
 	setCar,
 }: AddCarModalProps) {
-	const [requiredFieldsFilled, setRequiredFieldsFilled] = useState(false);
+	const [requiredFieldsFilled, setRequiredFieldsFilled] =
+		useState<boolean>(false);
 	const [carMakers, setCarMakers] = useState<CarMaker[]>([]);
 	const [carModels, setCarModels] = useState<CarModel[]>([]);
 
-	useEffect(() => {
+	useEffect((): void => {
 		const { brand_id, model_id, image } = car;
-		const requiredFieldsFilled =
+		const requiredFieldsFilled: boolean =
 			brand_id && model_id && image ? true : false;
 		setRequiredFieldsFilled(requiredFieldsFilled);
 		if (brand_id && brand_id !== 0) {
-			getAllModelsByMakerID(brand_id).then((models) => {
+			getAllModelsByMakerID(brand_id).then((models: CarModel[]): void => {
 				setCarModels(models);
 			});
 		}
 	}, [car]);
 
-	useEffect(() => {
-		getAllCarMakers().then((makers) => {
+	useEffect((): void => {
+		getAllCarMakers().then((makers: CarMaker[]): void => {
 			setCarMakers(makers);
 		});
 	}, []);
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-	) => {
+	): void => {
 		const { id, value } = e.target;
-		const fieldValue =
+		const fieldValue: string | number =
 			id === "brand_id" || id === "model_id"
 				? parseInt(value, 10)
 				: value;
 		setCar({ ...car, [id]: fieldValue });
 	};
 
-	const handleSubmit = (e: any) => {
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files ? e.target.files[0] : null;
+		if (file) {
+			setCar({ ...car, image_file: file });
+		}
+	};
+
+	const handleSubmit = (e: any): void => {
 		e.preventDefault();
 		onSubmit(car);
 		resetForm();
 	};
 
-	const resetForm = () => {
+	const resetForm = (): void => {
 		setCar({
 			id: null,
 			brand_id: null,
@@ -117,6 +98,7 @@ export default function AddCarModal({
 			license_plate: "",
 			vin: "",
 			created_at: "",
+			image_file: null,
 		});
 	};
 
@@ -151,10 +133,14 @@ export default function AddCarModal({
 							onChange={handleChange}
 							label="Car Brand (required)"
 							name="brand_id"
-							options={carMakers.map((maker) => ({
-								value: maker.id,
-								label: maker.name,
-							}))}
+							options={carMakers.map(
+								(
+									maker: CarMaker,
+								): { value: number; label: string } => ({
+									value: maker.id,
+									label: maker.name,
+								}),
+							)}
 						/>
 						<Select
 							id="model_id"
@@ -162,10 +148,14 @@ export default function AddCarModal({
 							onChange={handleChange}
 							label="Car Model (required)"
 							name="model_id"
-							options={carModels.map((model) => ({
-								value: model.id,
-								label: model.name,
-							}))}
+							options={carModels.map(
+								(
+									model: CarModel,
+								): { value: number; label: string } => ({
+									value: model.id,
+									label: model.name,
+								}),
+							)}
 						/>
 						<Input
 							id="license_plate"
@@ -229,6 +219,11 @@ export default function AddCarModal({
 							onChange={handleChange}
 							label="Description"
 							name="description"
+						/>
+						<input
+							type="file"
+							id="image"
+							onChange={handleFileChange}
 						/>
 					</div>
 					<div className="flex justify-between pt-4">
