@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Car } from "@/common/types";
 import AddCarModal from "./AddModal";
-import { fetchCars } from "@/common/functions";
+import { getAllCars } from "@/common/functions";
 import AuthLayout from "./layout";
 
 export default function Garage() {
@@ -23,7 +23,7 @@ export default function Garage() {
 	};
 
 	useEffect(() => {
-		fetchCars().then((data) => {
+		getAllCars().then((data) => {
 			if (!data) {
 				return;
 			}

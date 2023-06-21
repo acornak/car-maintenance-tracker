@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { fetchCarByID, fetchCars } from "@/common/functions";
+import { getCarByID, getAllCars } from "@/common/functions";
 import { Car } from "@/common/types";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AuthLayout from "../layout";
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-	const cars: Car[] = await fetchCars();
+	const cars: Car[] = await getAllCars();
 	return cars.map((car: Car) => ({
 		slug: `${car.id}`,
 	}));
@@ -26,7 +26,7 @@ export default async function CarPage({
 
 	useEffect(() => {
 		const carID = params.slug;
-		fetchCarByID(parseInt(carID))
+		getCarByID(parseInt(carID))
 			.then((car) => {
 				if (!car) {
 					// TODO: add err handling

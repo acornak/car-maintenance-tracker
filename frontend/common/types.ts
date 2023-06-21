@@ -21,6 +21,7 @@ export type Car = {
 	brand_name?: string | null;
 	model_name?: string | null;
 	created_at: string | null;
+	image_file: File | null;
 };
 
 export type CarMaker = {
