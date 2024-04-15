@@ -22,7 +22,7 @@ export default function Garage() {
 		addNewCar(newCar);
 	};
 
-	useEffect(() => {
+	useEffect((): void => {
 		getAllCars().then((data) => {
 			if (!data) {
 				return;
@@ -31,7 +31,7 @@ export default function Garage() {
 		});
 	}, [addCarSuccess]);
 
-	useEffect(() => {
+	useEffect((): (() => void) => {
 		let timer: NodeJS.Timeout | null = null;
 
 		timer = setTimeout(() => {
