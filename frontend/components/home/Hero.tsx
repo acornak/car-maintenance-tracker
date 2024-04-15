@@ -1,7 +1,6 @@
 import React from "react";
 import Image from "next/image";
 
-// TODO
 const Hero: React.FC = () => {
 	return (
 		<div className="relative bg-white overflow-hidden">
@@ -32,9 +31,10 @@ const Hero: React.FC = () => {
 				<Image
 					className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
 					src="/hero.jpg"
-					alt="Car Maintenance"
+					alt="Car Maintenance Tracker Hero Image"
 					fill={true}
 					style={{ objectFit: "cover" }}
+					role="img"
 				/>
 			</div>
 		</div>

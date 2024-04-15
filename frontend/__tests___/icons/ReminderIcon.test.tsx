@@ -1,7 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import "@testing-library/jest-dom/extend-expect";
-import ReminderIcon from "../../icons/ReminderIcon";
+import ReminderIcon from "@/icons/ReminderIcon";
 
 describe("TrackingIcon Component", () => {
 	it("should render without throwing an error", () => {

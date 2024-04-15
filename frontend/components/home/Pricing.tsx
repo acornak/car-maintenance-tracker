@@ -1,10 +1,10 @@
 import React from "react";
 
-interface PricingPlan {
+type PricingPlan = {
 	name: string;
 	price: number;
 	features: string[];
-}
+};
 
 const pricingPlans: PricingPlan[] = [
 	{
@@ -36,7 +36,6 @@ const pricingPlans: PricingPlan[] = [
 			"Premium Feature 2",
 		],
 	},
-	// Add more pricing plans as needed
 ];
 
 const Pricing: React.FC = () => {
@@ -47,7 +46,7 @@ const Pricing: React.FC = () => {
 					Choose Your Plan
 				</h2>
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-					{pricingPlans.map((plan, idx) => (
+					{pricingPlans.map((plan: PricingPlan, idx: number) => (
 						<div
 							key={idx}
 							className="p-6 bg-white rounded-lg shadow"
@@ -59,11 +58,13 @@ const Pricing: React.FC = () => {
 								${plan.price}
 							</p>
 							<ul className="list-disc list-inside space-y-2">
-								{plan.features.map((feature, idx) => (
-									<li key={idx} className="text-gray-600">
-										{feature}
-									</li>
-								))}
+								{plan.features.map(
+									(feature: string, idx: number) => (
+										<li key={idx} className="text-gray-600">
+											{feature}
+										</li>
+									),
+								)}
 							</ul>
 						</div>
 					))}

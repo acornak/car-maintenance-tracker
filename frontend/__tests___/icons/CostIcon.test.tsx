@@ -1,7 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import "@testing-library/jest-dom/extend-expect";
-import CostIcon from "../../icons/CostIcon";
+import CostIcon from "@/icons/CostIcon";
 
 describe("TrackingIcon Component", () => {
 	it("should render without throwing an error", () => {

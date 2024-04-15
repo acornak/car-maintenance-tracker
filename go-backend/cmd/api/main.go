@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -76,18 +77,31 @@ func initializeDatabase(cfg *dbConfig, logger *zap.SugaredLogger) (*sql.DB, erro
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.host, cfg.port, cfg.user, cfg.password, cfg.dbname, cfg.sslmode)
 
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, err
+	var db *sql.DB
+	var err error
+
+	deadline := time.Now().Add(5 * time.Minute)
+
+	for attempts := 0; time.Now().Before(deadline); attempts++ {
+		db, err = sql.Open("postgres", connStr)
+		if err != nil {
+			logger.Error("Error opening database connection", zap.Error(err))
+			time.Sleep(time.Second * 5)
+			continue
+		}
+
+		err = db.Ping()
+		if err != nil {
+			logger.Error("Database ping failed", zap.String("attempt", fmt.Sprintf("%d", attempts+1)), zap.Error(err))
+			db.Close()
+			time.Sleep(time.Second * 2)
+		} else {
+			logger.Info("Successfully connected to the database")
+			return db, nil
+		}
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info("Successfully connected to the database")
-	return db, nil
+	return nil, errors.New("failed to connect to the database")
 }
 
 func newApplication(cfg config, logger *zap.SugaredLogger, db *sql.DB) *application {

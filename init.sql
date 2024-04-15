@@ -8,21 +8,16 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS maintenance (
-    id SERIAL PRIMARY KEY,
-    car_id INTEGER REFERENCES cars(id),
-);
-
 CREATE TABLE IF NOT EXISTS car_makers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
-)
+);
 
 CREATE TABLE IF NOT EXISTS car_models (
     id SERIAL PRIMARY KEY,
     car_maker_id INTEGER REFERENCES car_makers(id),
     name VARCHAR(100) NOT NULL
-)
+);
 
 CREATE TABLE IF NOT EXISTS users_cars (
     id SERIAL PRIMARY KEY,
@@ -37,6 +32,11 @@ CREATE TABLE IF NOT EXISTS users_cars (
     license_plate VARCHAR(100) NOT NULL,
     vin VARCHAR(100) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS maintenance (
+    id SERIAL PRIMARY KEY,
+    car_id INTEGER REFERENCES users_cars(id)
 );
 
 INSERT INTO car_makers (id, name) VALUES
@@ -309,3 +309,5 @@ INSERT INTO car_models (id, car_maker_id, name) VALUES
     (236, 29, 'XC40'),
     (237, 29, 'XC60'),
     (238, 29, 'XC90');
+
+    COMMIT;
